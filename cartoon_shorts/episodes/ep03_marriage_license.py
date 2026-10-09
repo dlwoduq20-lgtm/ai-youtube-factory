@@ -9,8 +9,8 @@
 import math
 
 from .. import squire as S
-from ..engine import draw_text, ease_out_back, ease_out_cubic, ellipse, prog, rrect, set_rgb
-from ..explainer import Explainer
+from ..engine import draw_text, ease_out_back, ease_out_cubic, prog, rrect, set_rgb
+from ..explainer import Explainer, close_up, label
 
 TITLE = "오늘의 만평 #03 - 결혼에도 자격증이 필요해?"
 DURATION = 37.0
@@ -103,19 +103,6 @@ def cues(ep):
 
 
 # ---------------------------------------------------------------- 샷 그리기
-def _label(ctx, text, x, y, k, fill="#F3EBD5", ink="#2E3A4A", size=66):
-    if k <= 0.01:
-        return
-    ctx.save()
-    ctx.translate(x, y)
-    ctx.scale(k, k)
-    tw = len(text) * size * 0.95 + 90
-    rrect(ctx, -tw / 2, -60, tw, 120, 60)
-    S.fs(ctx, fill)
-    draw_text(ctx, text, 0, 4, size, font="black", fill=ink)
-    ctx.restore()
-
-
 def shot_hook(ctx, lt, sh, ep):
     S.planks(ctx, base="#B9A57A", dark="#9C8960", w=150)
     S.spotlight(ctx, 540, -50, 300, 1150, 1600, alpha=0.25)
@@ -138,38 +125,16 @@ def shot_hook(ctx, lt, sh, ep):
     S.stamp(ctx, 620, 1010, "자격 미달?", prog(lt, sh.me(0) - 0.1, sh.me(0) + 0.4), size=110, rot=-0.12)
 
 
-def _close(ctx, lt, sh, ep, P, spk, facing, x, base, dark, label, talk_line, calm=False):
-    S.planks(ctx, base=base, dark=dark, seed=facing + 3)
-    k = ease_out_cubic(prog(lt, 0.0, 0.5))
-    talking = sh.m(talk_line) <= lt
-    mo = ep.mouth(spk, sh.start + lt)
-    P.draw(ctx, x - facing * 700 * (1 - k), 1830, 2.05, facing,
-           pose="hips" if calm else ("point" if talking else "hips"),
-           expr="deadpan" if calm else ("angry" if talking else "smug"),
-           mouth=mo * 1.3, t=lt + facing, bob=not calm)
-    _label(ctx, label, 540 + facing * -230, 250, ease_out_back(prog(lt, 0.4, 0.75)))
-    if talking and not calm:
-        for i in range(3):  # 말하는 효과선
-            a = -0.6 + i * 0.35
-            r0 = 300 + 20 * math.sin(lt * 20 + i)
-            cx, cy = x + facing * 140, 860
-            ctx.move_to(cx + facing * math.cos(a) * r0, cy + math.sin(a) * r0)
-            ctx.line_to(cx + facing * math.cos(a) * (r0 + 70), cy + math.sin(a) * (r0 + 70))
-        set_rgb(ctx, "#F3EBD5")
-        ctx.set_line_width(10)
-        ctx.stroke()
-
-
 def shot_prof(ctx, lt, sh, ep):
-    _close(ctx, lt, sh, ep, PROF, "P", 1, 420, "#6B5A48", "#56483A", "중국 72세 교수", 1, calm=True)
+    close_up(ctx, lt, sh, ep, PROF, "P", 1, 420, "#6B5A48", "#56483A", "중국 72세 교수", 1, calm=True)
 
 
 def shot_pro(ctx, lt, sh, ep):
-    _close(ctx, lt, sh, ep, GUY, "Y", 1, 420, S.SLATE, S.SLATE_D, "공감파", 1)
+    close_up(ctx, lt, sh, ep, GUY, "Y", 1, 420, S.SLATE, S.SLATE_D, "공감파", 1)
 
 
 def shot_con(ctx, lt, sh, ep):
-    _close(ctx, lt, sh, ep, GIRL, "W", -1, 660, "#B9A57A", "#9C8960", "반박파", 0)
+    close_up(ctx, lt, sh, ep, GIRL, "W", -1, 660, "#B9A57A", "#9C8960", "반박파", 0)
 
 
 def shot_reqs(ctx, lt, sh, ep):
@@ -247,8 +212,8 @@ def shot_outro(ctx, lt, sh, ep):
     waving = lt >= sh.m(1)
     CIT.draw(ctx, 540, 2060, 2.0, 1, pose="wave" if waving else "shrug",
              expr="neutral" if waving else "deadpan", t=lt)
-    _label(ctx, "댓글로 알려줘!", 540, 330, ease_out_back(prog(lt, sh.m(1), sh.m(1) + 0.4), 2.0), size=80)
-    _label(ctx, "구독", 540, 560, ease_out_back(prog(lt, sh.m(1) + 0.8, sh.m(1) + 1.2), 2.0),
+    label(ctx, "댓글로 알려줘!", 540, 330, ease_out_back(prog(lt, sh.m(1), sh.m(1) + 0.4), 2.0), size=80)
+    label(ctx, "구독", 540, 560, ease_out_back(prog(lt, sh.m(1) + 0.8, sh.m(1) + 1.2), 2.0),
            fill=S.RUST, ink="#FFFFFF")
 
 

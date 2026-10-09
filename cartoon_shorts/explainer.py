@@ -6,11 +6,14 @@ TTS 합성·타임라인 배치·립싱크·자막·전환·믹싱은 이 모듈
     EP = Explainer(script, voice, cap_color, shot_fns, camera, cues_fn, notice="...")
     prepare, render_frame, mix = EP.prepare, EP.render_frame, EP.mix
 """
+import math
+
 import numpy as np
 
 from . import audio, tts
 from . import squire as S
-from .engine import FPS, H, W, clamp, draw_text, ease_in_out, ease_out_cubic, prog, set_rgb
+from .engine import (FPS, H, W, clamp, draw_text, ease_in_out, ease_out_back, ease_out_cubic,
+                     prog, rrect, set_rgb)
 
 TRANS = 0.3  # 샷 전환 시간
 LEAD = 0.25  # 샷 시작 후 첫 대사까지
@@ -187,3 +190,41 @@ class Explainer:
             draw_text(ctx, self.notice, W / 2, 70, 30, font="black", fill="#FFFFFF", alpha=0.75,
                       stroke=6, stroke_fill="#1E1E22")
         self._caption(ctx, t)
+
+
+# ---------------------------------------------------------------- 공용 샷 부품
+def label(ctx, text, x, y, k, fill="#F3EBD5", ink="#2E3A4A", size=66):
+    """둥근 이름표 (k: 0→1 팝업 배율)."""
+    if k <= 0.01:
+        return
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(k, k)
+    tw = len(text) * size * 0.95 + 90
+    rrect(ctx, -tw / 2, -60, tw, 120, 60)
+    S.fs(ctx, fill)
+    draw_text(ctx, text, 0, 4, size, font="black", fill=ink)
+    ctx.restore()
+
+
+def close_up(ctx, lt, sh, ep, P, spk, facing, x, base, dark, name, talk_line, calm=False):
+    """인물 클로즈업: 옆에서 미끄러져 들어오고, talk_line 번째 대사부터 삿대질 + 효과선.
+    calm=True 면 손 허리에 무표정으로 덤덤하게."""
+    S.planks(ctx, base=base, dark=dark, seed=facing + 3)
+    k = ease_out_cubic(prog(lt, 0.0, 0.5))
+    talking = sh.m(talk_line) <= lt
+    P.draw(ctx, x - facing * 700 * (1 - k), 1830, 2.05, facing,
+           pose="hips" if calm else ("point" if talking else "hips"),
+           expr="deadpan" if calm else ("angry" if talking else "smug"),
+           mouth=ep.mouth(spk, sh.start + lt) * 1.3, t=lt + facing, bob=not calm)
+    label(ctx, name, W / 2 - facing * 230, 250, ease_out_back(prog(lt, 0.4, 0.75)))
+    if talking and not calm:
+        for i in range(3):  # 말하는 효과선
+            a = -0.6 + i * 0.35
+            r0 = 300 + 20 * math.sin(lt * 20 + i)
+            cx, cy = x + facing * 140, 860
+            ctx.move_to(cx + facing * math.cos(a) * r0, cy + math.sin(a) * r0)
+            ctx.line_to(cx + facing * math.cos(a) * (r0 + 70), cy + math.sin(a) * (r0 + 70))
+        set_rgb(ctx, "#F3EBD5")
+        ctx.set_line_width(10)
+        ctx.stroke()
