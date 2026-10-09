@@ -20,11 +20,11 @@ A = S.Person(coat="#4E5A6B", tie="#3E8E87", hair="part", hair_color="#4A3426", b
 B = S.Person(coat="#8A6F52", tie="#C9473B", hair="bob", hair_color="#2F2724", badge=True)
 CIT = S.Person(coat="#6F7F63", hair="beanie", hood=True, pants="#3D4656")
 
-# 화자 → (edge 음성, 속도, 피치)
+# 화자 → (edge 음성, 속도, 피치, 추가 피치 배율) — 빠르고 높은 만화 톤
 VOICE = {
-    "N": ("male", "+8%", "-2Hz"),
-    "A": ("male2", "+12%", "-4Hz"),
-    "B": ("female", "+12%", "+4Hz"),
+    "N": ("male", "+40%", "+20Hz", 1.18),
+    "A": ("male2", "+45%", "+0Hz", 1.25),
+    "B": ("female", "+45%", "+30Hz", 1.15),
 }
 CAP_COLOR = {"N": "#FFFFFF", "A": "#9FE3DA", "B": "#FFC9A8", "AB": "#FFE38A"}
 
@@ -45,7 +45,7 @@ SCRIPT = [
                   ("N", "어느새, 일 년.", None)], {"tail": 0.8}),
     ("arrow", [("N", "그 사이 장바구니 물가는 이만큼 올랐고,", None)], {"tail": 0.6}),
     ("rain", [("N", "국민들의 한숨은 깊어만 갔습니다.", None)], {"tail": 0.8}),
-    ("gavel", [("N", "그리고 마침내, 법안이 통과되던 날.", None)], {"tail": 1.6}),
+    ("gavel", [("N", "그리고 마침내, 법안이 통과되던 날.", None)], {"tail": 1.6, "min_tail": 2.1}),
     ("smug", [("N", "두 사람은 동시에 외쳤습니다.", None),
               ("AB", "이게 다 저희 덕분입니다!", None)], {"tail": 0.6}),
     ("compare", [("N", "그런데 그 법안, 일 년 전 원안이랑 토씨 하나 안 바뀌었다는 거, 아시나요?",
@@ -55,8 +55,9 @@ SCRIPT = [
 ]
 
 TRANS = 0.3  # 샷 전환 시간
-LEAD = 0.45  # 샷 시작 후 첫 대사까지
-GAP = 0.2
+LEAD = 0.25  # 샷 시작 후 첫 대사까지
+GAP = 0.08
+TAIL = 0.6  # 샷 끝 여운 배율 (숏폼 템포)
 
 
 class Shot:
@@ -92,8 +93,8 @@ def prepare():
         for spk, text, cap in lines:
             parts = []
             for sp in (("A", "B") if spk == "AB" else (spk,)):
-                v, r, p = VOICE[sp]
-                x, _ = tts.synth(text, v, rate=r, pitch=p)
+                v, r, p, k = VOICE[sp]
+                x, _ = tts.synth(text, v, rate=r, pitch=p, shift=k)
                 parts.append((sp, x))
             d = max(len(x) for _, x in parts) / audio.SR
             for sp, x in parts:
@@ -101,7 +102,7 @@ def prepare():
             sh.marks.append((lt, lt + d))
             LINES.append((cur + lt, cur + lt + d, spk, cap or text))
             lt += d + GAP
-        sh.dur = lt - GAP + opts.get("tail", 0.45)
+        sh.dur = lt - GAP + max(opts.get("tail", 0.45) * TAIL, opts.get("min_tail", 0))
         cur += sh.dur
         SHOTS.append(sh)
     DURATION = cur
@@ -125,7 +126,7 @@ def prepare():
 def mix():
     duck = [(s, e) for s, e, *_ in LINES]
     return audio.mix(DURATION, CUES, bgm_gain=0.3, duck=duck, voice=VOICE_TRACK,
-                     style="explain", bpm=92)
+                     style="explain", bpm=118)
 
 
 def mouth(spk, t):

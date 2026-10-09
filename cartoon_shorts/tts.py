@@ -109,8 +109,19 @@ def _espeak(text, voice, rate, pitch, out):
         w.writeframes(pcm.astype(np.int16).tobytes())
 
 
-def synth(text, voice="female", rate="+10%", pitch="+0Hz"):
-    """텍스트 → (samples, seconds). voice 는 VOICES 키 또는 edge 음성 이름."""
+def _shift(src, factor):
+    """만화풍 톤업: 피치를 factor 배로 올린다 (길이 유지, 결과 캐시)."""
+    out = f"{os.path.splitext(src)[0]}_p{factor:.3f}.wav"
+    if not (os.path.exists(out) and os.path.getsize(out) > 0):
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-af",
+                        f"rubberband=pitch={factor}:transients=crisp", "-ar", str(SR), out],
+                       check=True)
+    return out
+
+
+def synth(text, voice="female", rate="+10%", pitch="+0Hz", shift=1.0):
+    """텍스트 → (samples, seconds). voice 는 VOICES 키 또는 edge 음성 이름.
+    shift: 합성 후 추가 피치 배율 (edge 의 pitch 는 변화 폭이 작아 만화 톤엔 부족)."""
     voice = VOICES.get(voice, voice)
     backend = os.environ.get("TTS_BACKEND")
     os.makedirs(CACHE, exist_ok=True)
@@ -128,6 +139,8 @@ def synth(text, voice="female", rate="+10%", pitch="+0Hz"):
                     os.remove(out)
                 print(f"[tts] {b} 실패 → 폴백: {type(e).__name__}")
                 continue
+        if shift != 1.0:
+            out = _shift(out, shift)
         x = _decode(out)
         # 앞뒤 무음 정리
         nz = np.nonzero(np.abs(x) > 0.01)[0]
