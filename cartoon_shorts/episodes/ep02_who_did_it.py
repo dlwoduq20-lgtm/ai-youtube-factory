@@ -1,7 +1,10 @@
-"""오늘의 만평 #02 — 그 법안, 누가 통과시켰나?  (해설 애니메이션 스타일 + TTS)
+"""오늘의 만평 #02 — 법안이랑 기업 문건이 토씨까지 똑같다고?  (해설 애니메이션 스타일 + TTS)
+
+실제 사건: 2026년 10월 6일 산업통상부 국정감사에서 한 야당 의원이 RE100(재생에너지자립도시)
+특별법이 한 기업의 내부 문건과 일정·조문이 일치한다며 입법로비 의혹을 제기한 건.
+의혹은 '의원 주장'으로만 다루고, 장관 답변과 기업 반론을 함께 넣는다. 개인·기업 이름은 쓰지 않는다.
 
 내레이션 한 줄 = 자막 한 덩어리, 샷(장면) 단위로 타임라인을 TTS 길이에 맞춰 자동 배치한다.
-특정 정당을 지칭하지 않도록 가상의 A당 / B당 을 사용.
 """
 import math
 import random
@@ -13,18 +16,18 @@ from .. import squire as S
 from ..engine import (FPS, H, W, clamp, draw_text, ease_in_out, ease_out_back,
                       ease_out_cubic, ellipse, prog, rrect, set_rgb, wobble)
 
-TITLE = "오늘의 만평 #02 - 그 법안, 누가 통과시켰나?"
+TITLE = "오늘의 만평 #02 - 법안이랑 기업 문건이 토씨까지 똑같다고?"
 DURATION = 60.0
 
 A = S.Person(coat="#4E5A6B", tie="#3E8E87", hair="part", hair_color="#4A3426", badge=True)
-B = S.Person(coat="#8A6F52", tie="#C9473B", hair="bob", hair_color="#2F2724", badge=True)
+B = S.Person(coat="#3B3F48", tie="#5B6E8C", hair="part", hair_color="#8E8E8E", badge=True)  # 장관
 CIT = S.Person(coat="#6F7F63", hair="beanie", hood=True, pants="#3D4656")
 
 # 화자 → (edge 음성, 속도, 피치, 추가 피치 배율) — 빠르고 높은 만화 톤
 VOICE = {
-    "N": ("male", "+40%", "+20Hz", 1.18),
-    "A": ("male2", "+45%", "+0Hz", 1.25),
-    "B": ("female", "+45%", "+30Hz", 1.15),
+    "N": ("male", "+50%", "+20Hz", 1.18),
+    "A": ("male2", "+55%", "+0Hz", 1.25),
+    "B": ("male", "+40%", "-10Hz", 0.92),  # 장관: 혼자 낮고 덤덤하게 (대비 개그)
 }
 CAP_COLOR = {"N": "#FFFFFF", "A": "#9FE3DA", "B": "#FFC9A8", "AB": "#FFE38A"}
 
@@ -32,26 +35,25 @@ CAP_COLOR = {"N": "#FFFFFF", "A": "#9FE3DA", "B": "#FFC9A8", "AB": "#FFE38A"}
 # ---------------------------------------------------------------- 대본
 # (화자, TTS 문장, 자막 문장 or None)
 SCRIPT = [
-    ("exterior", [("N", "여기, 국회의원 삼백 명이 일하는 곳이 있습니다.",
-                   "여기, 국회의원 300명이 일하는 곳이 있습니다.")], {}),
-    ("bill", [("N", "이들의 임무는 단 하나. 국민을 위한 법을 만드는 것이죠.", None)], {}),
-    ("folder", [("N", "그런데 어느 날, 아주 중요한 법안 하나가 올라옵니다.", None)], {}),
-    ("a_close", [("N", "A당 의원이 말합니다.", None),
-                 ("A", "이건 우리가 먼저 낸 법안입니다!", None)], {}),
-    ("b_close", [("N", "그러자 B당 의원이 맞서죠.", None),
-                 ("B", "무슨 소리예요! 우리가 원조라고요!", None)], {}),
-    ("tug", [("N", "그렇게 시작된 줄다리기.", None)], {"tail": 1.2}),
-    ("calendar", [("N", "일주일이 지나고,", None), ("N", "한 달이 지나고,", None),
-                  ("N", "어느새, 일 년.", None)], {"tail": 0.8}),
-    ("arrow", [("N", "그 사이 장바구니 물가는 이만큼 올랐고,", None)], {"tail": 0.6}),
-    ("rain", [("N", "국민들의 한숨은 깊어만 갔습니다.", None)], {"tail": 0.8}),
-    ("gavel", [("N", "그리고 마침내, 법안이 통과되던 날.", None)], {"tail": 1.6, "min_tail": 2.1}),
-    ("smug", [("N", "두 사람은 동시에 외쳤습니다.", None),
-              ("AB", "이게 다 저희 덕분입니다!", None)], {"tail": 0.6}),
-    ("compare", [("N", "그런데 그 법안, 일 년 전 원안이랑 토씨 하나 안 바뀌었다는 거, 아시나요?",
-                  "그런데 그 법안, 1년 전 원안이랑 토씨 하나 안 바뀌었다는 거, 아시나요?")],
+    ("exterior", [("N", "지금 국정감사에서 제대로 터진 사건, 하나 알려줄게!", None)], {}),
+    ("bill", [("N", "주인공은 알이백 특별법! 재생에너지 자립도시를 만들자는 법이야.",
+               "주인공은 RE100 특별법! 재생에너지 자립도시를 만들자는 법이야.")], {}),
+    ("folder", [("N", "근데 한 야당 의원이, 어느 기업의 내부 문건을 짠! 하고 꺼냈어.", None)], {}),
+    ("a_close", [("N", "의원 왈,", None),
+                 ("A", "이 문건이랑 법안, 조문 토씨까지 똑같다니까?!", None)], {}),
+    ("calendar", [("N", "문건 속 계획은, 이천이십오년 시월 법안 발의.",
+                   "문건 속 계획: 2025년 10월 법안 발의."),
+                  ("N", "의원 말로는,", None),
+                  ("N", "실제로 그 무렵부터 관련 법안 발의가 줄줄이!", None)], {"tail": 1.2}),
+    ("arrow", [("N", "게다가 법이 생기기도 전에, 예산 이백육억이 먼저 잡혔다는 지적까지!",
+                "게다가 법이 생기기도 전에, 예산 206억이 먼저 잡혔다는 지적까지!")], {"tail": 0.6}),
+    ("b_close", [("N", "장관의 대답은?", None),
+                 ("B", "다른 법안을 보고 만든 것으로 추정됩니다.", None)], {"tail": 0.8}),
+    ("tug", [("N", "의혹이냐, 우연이냐! 줄다리기 시작!", None)], {"tail": 1.2}),
+    ("compare", [("N", "기업 문건이랑 발의된 법안, 진짜 토씨까지 같은 걸까?", None)],
      {"tail": 1.2}),
-    ("outro", [("N", "여러분 생각은 어떠세요? 댓글로 알려주세요.", None)], {"tail": 2.0}),
+    ("outro", [("N", "기업은 불법도 특혜도 없었다는 입장, 야당은 특검까지 요구 중!", None),
+               ("N", "너희 생각은 어때? 댓글로 알려줘!", None)], {"tail": 2.0}),
 ]
 
 TRANS = 0.3  # 샷 전환 시간
@@ -142,18 +144,15 @@ def shot_named(name):
 
 
 # ---------------------------------------------------------------- 사운드 큐
+CAL_SEQ = ["25.6", "25.7", "25.8", "25.9", "25.10"]
+
+
 def _calendar_flips(sh):
-    """(local_time, 이전 숫자) 목록과 최종 숫자."""
-    seqs = [[1, 2, 3, 4, 5, 6, 7], [7, 10, 14, 18, 22, 26, 30],
-            [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 365]]
-    flips = []
-    for i, seq in enumerate(seqs):
-        t0 = sh.m(i) + 0.15
-        span = (sh.me(i) - sh.m(i)) * 0.95
-        n = len(seq) - 1
-        for j in range(n):
-            flips.append((t0 + span * j / n, seq[j], seq[j + 1]))
-    return flips
+    """(local_time, 이전 라벨, 다음 라벨) — 첫 대사 동안 문건 속 일정이 넘어간다."""
+    t0 = sh.m(0) + 0.15
+    span = (sh.me(0) - sh.m(0)) * 0.8
+    n = len(CAL_SEQ) - 1
+    return [(t0 + span * j / n, CAL_SEQ[j], CAL_SEQ[j + 1]) for j in range(n)]
 
 
 def _gavel_times(sh):
@@ -180,9 +179,10 @@ def _cues():
         if sh.name == "calendar":
             for ft, *_ in _calendar_flips(sh):
                 c.append((st + ft, "rip"))
+            c.append((st + sh.m(2), "stamp"))
         if sh.name == "arrow":
             c.append((st + 0.35, "fall"))
-            for k in range(3):
+            for k in range(2):
                 c.append((st + 0.9 + k * 0.35, "pop"))
         if sh.name == "rain":
             c.append((st, "rain", sh.dur + TRANS))
@@ -195,8 +195,8 @@ def _cues():
         if sh.name == "compare":
             c.append((st + sh.me(0) - 0.6, "stamp"))
         if sh.name == "outro":
-            c.append((st + sh.m(0) + 1.4, "pop"))
-            c.append((st + sh.m(0) + 2.2, "ding"))
+            c.append((st + sh.m(1), "pop"))
+            c.append((st + sh.m(1) + 0.8, "ding"))
     return sorted(c, key=lambda x: x[0])
 
 
@@ -233,7 +233,7 @@ def shot_exterior(ctx, lt, sh):
 
 def shot_bill(ctx, lt, sh):
     S.desk(ctx)
-    S.paper(ctx, 540, 900, 1.5, "법률안", rot=-0.04, lines=8)
+    S.paper(ctx, 540, 900, 1.5, "RE100 특별법", rot=-0.04, lines=8)
     # 펜이 글을 씀
     k = prog(lt, 0.4, sh.me(0) - 0.6)
     px = 540 - 260 + 520 * ((k * 4) % 1.0)
@@ -251,7 +251,7 @@ def shot_bill(ctx, lt, sh):
         ctx.close_path()
         S.fs(ctx, "#E8B93E")
         ctx.restore()
-    S.stamp(ctx, 640, 1180, "국민 우선", prog(lt, sh.me(0) - 0.4, sh.me(0) + 0.2), size=100)
+    S.stamp(ctx, 640, 1180, "발의", prog(lt, sh.me(0) - 0.4, sh.me(0) + 0.2), size=100)
 
 
 def shot_folder(ctx, lt, sh):
@@ -261,7 +261,7 @@ def shot_folder(ctx, lt, sh):
     set_rgb(ctx, (0, 0, 0, 0.25))
     ctx.fill()
     k = ease_out_back(prog(lt, 0.2, 0.7), 1.3)
-    S.folder(ctx, -400 + 940 * k, 960, 1.5, "민생법안", rot=-0.05 * (1 - k))
+    S.folder(ctx, -400 + 940 * k, 960, 1.5, "내부 문건", rot=-0.05 * (1 - k))
     rnd = random.Random(4)
     for _ in range(40):  # 먼지
         x = 540 + rnd.uniform(-450, 450)
@@ -271,13 +271,14 @@ def shot_folder(ctx, lt, sh):
         ctx.fill()
 
 
-def _close(ctx, lt, sh, P, spk, facing, x, base, dark, label):
+def _close(ctx, lt, sh, P, spk, facing, x, base, dark, label, calm=False):
     S.planks(ctx, base=base, dark=dark, seed=facing + 3)
     k = ease_out_cubic(prog(lt, 0.0, 0.5))
     talking = sh.m(1) <= lt
     mo = mouth(spk, sh.start + lt)
     P.draw(ctx, x - facing * 700 * (1 - k), 1830, 2.05, facing,
-           pose="point" if talking else "hips", expr="angry" if talking else "smug",
+           pose="hips" if calm else ("point" if talking else "hips"),
+           expr="deadpan" if calm else ("angry" if talking else "smug"),
            mouth=mo * 1.3, t=lt + facing)
     kl = ease_out_back(prog(lt, 0.4, 0.75))
     if kl > 0.01:
@@ -289,7 +290,7 @@ def _close(ctx, lt, sh, P, spk, facing, x, base, dark, label):
         S.fs(ctx, "#F3EBD5")
         draw_text(ctx, label, 0, 4, 66, font="black", fill="#2E3A4A")
         ctx.restore()
-    if talking:
+    if talking and not calm:
         for i in range(3):  # 말하는 효과선
             a = -0.6 + i * 0.35
             r0 = 300 + 20 * math.sin(lt * 20 + i)
@@ -302,11 +303,11 @@ def _close(ctx, lt, sh, P, spk, facing, x, base, dark, label):
 
 
 def shot_a_close(ctx, lt, sh):
-    _close(ctx, lt, sh, A, "A", 1, 420, S.SLATE, S.SLATE_D, "A당 의원")
+    _close(ctx, lt, sh, A, "A", 1, 420, S.SLATE, S.SLATE_D, "야당 의원")
 
 
 def shot_b_close(ctx, lt, sh):
-    _close(ctx, lt, sh, B, "B", -1, 660, "#B9A57A", "#9C8960", "B당 의원")
+    _close(ctx, lt, sh, B, "B", -1, 660, "#B9A57A", "#9C8960", "장관", calm=True)
 
 
 def _hand(x, y, s, facing, rot, p):
@@ -334,7 +335,7 @@ def shot_tug(ctx, lt, sh):
     hb = _hand(*pb, s, -1, rb, (215, -285))
     mid = ((ha[0] + hb[0]) / 2, (ha[1] + hb[1]) / 2 + 40)
     S.tube(ctx, [ha, mid, hb], 16, "#C89B5C", lw=5)
-    S.folder(ctx, mid[0], mid[1] + 130, 0.6, "민생법안", rot=wobble(lt, 1, 0.12, 4))
+    S.folder(ctx, mid[0], mid[1] + 130, 0.6, "RE100법", rot=wobble(lt, 1, 0.12, 4))
     for P, p, f, r in ((A, pa, 1, ra), (B, pb, -1, rb)):
         P.draw(ctx, p[0], p[1], s, f, pose="pull", expr="angry", mouth=0.3 + 0.3 * abs(math.sin(lt * 9)),
                t=lt, rot=r, bob=False, sweat=True)
@@ -347,24 +348,25 @@ def shot_tug(ctx, lt, sh):
 def shot_calendar(ctx, lt, sh):
     S.planks(ctx, base=S.SLATE, dark=S.SLATE_D, seed=7)
     flips = _calendar_flips(sh)
-    cur = 1
+    cur = CAL_SEQ[0]
     for ft, a, b in flips:
         if lt >= ft:
             cur = b
-    sub = "국회 계류 중"
-    S.calendar(ctx, 560, 1000, 1.0, f"D+{cur}", sub, seed=cur)
+    sub = "문건 속 일정"
+    S.calendar(ctx, 560, 1000, 1.0, cur, sub, seed=len(cur))
     for i, (ft, a, b) in enumerate(flips):
         k = (lt - ft) / 0.9
         if 0 <= k < 1:
-            S.flying_page(ctx, 560, 1000, 1.0, k, f"D+{a}", sub, seed=a,
+            S.flying_page(ctx, 560, 1000, 1.0, k, a, sub, seed=len(a),
                           direction=-1 if i % 3 else 1)
+    S.stamp(ctx, 560, 1080, "발의!", prog(lt, sh.m(2), sh.m(2) + 0.5), size=150, rot=-0.15)
 
 
 def shot_arrow(ctx, lt, sh):
     S.desk(ctx)
     S.graph_paper(ctx, 60, 120, 960, 1680)
-    draw_text(ctx, "장바구니 물가", 540, 260, 92, font="black", fill="#2E3A4A", rot=-0.03)
-    items = [("라면", 230, 560), ("우유", 820, 700), ("계란", 250, 980), ("전기요금", 800, 1180)]
+    draw_text(ctx, "법 통과 전인데?", 540, 260, 92, font="black", fill="#2E3A4A", rot=-0.03)
+    items = [("예산", 300, 620), ("206억", 760, 900)]
     for i, (name, x, y) in enumerate(items):
         k = ease_out_back(prog(lt, 0.9 + i * 0.35, 1.2 + i * 0.35), 2.2)
         if k < 0.01:
@@ -477,22 +479,22 @@ def shot_compare(ctx, lt, sh):
     S.desk(ctx)
     k1 = ease_out_back(prog(lt, 0.1, 0.5))
     k2 = ease_out_back(prog(lt, 0.4, 0.8))
-    S.paper(ctx, 285 - 600 * (1 - k1), 950, 0.95, "1년 전 원안", rot=-0.05)
-    S.paper(ctx, 795 + 600 * (1 - k2), 950, 0.95, "최종 통과안", rot=0.04)
+    S.paper(ctx, 285 - 600 * (1 - k1), 950, 0.95, "기업 문건", rot=-0.05)
+    S.paper(ctx, 795 + 600 * (1 - k2), 950, 0.95, "발의 법안", rot=0.04)
     ke = ease_out_back(prog(lt, 1.6, 2.0), 2.4)
     if ke > 0.01:
         ellipse(ctx, 540, 950, 70 * ke, 70 * ke)
         S.fs(ctx, "#E8B93E")
-        draw_text(ctx, "=", 540, 945, 110, font="black", fill="#2E3A4A", scale=ke)
-    S.stamp(ctx, 540, 1430, "100% 동일", prog(lt, sh.me(0) - 0.6, sh.me(0)), size=120, rot=-0.08)
+        draw_text(ctx, "?", 540, 945, 110, font="black", fill="#2E3A4A", scale=ke)
+    S.stamp(ctx, 540, 1430, "의혹", prog(lt, sh.me(0) - 0.6, sh.me(0)), size=140, rot=-0.08)
 
 
 def shot_outro(ctx, lt, sh):
     S.planks(ctx, base=S.SLATE, dark=S.SLATE_D, seed=9)
-    waving = lt >= sh.m(0) + 1.4
+    waving = lt >= sh.m(1)
     CIT.draw(ctx, 540, 2060, 2.0, 1, pose="wave" if waving else "down",
              expr="neutral" if waving else "deadpan", t=lt)
-    k = ease_out_back(prog(lt, sh.m(0) + 1.4, sh.m(0) + 1.8), 2.0)
+    k = ease_out_back(prog(lt, sh.m(1), sh.m(1) + 0.4), 2.0)
     if k > 0.01:
         ctx.save()
         ctx.translate(540, 330)
@@ -508,9 +510,9 @@ def shot_outro(ctx, lt, sh):
         rrect(ctx, -322, -88, 644, 170, 36)
         set_rgb(ctx, "#F3EBD5")
         ctx.fill()
-        draw_text(ctx, "댓글로 알려주세요!", 0, 0, 72, font="black", fill="#2E3A4A")
+        draw_text(ctx, "댓글로 알려줘!", 0, 0, 80, font="black", fill="#2E3A4A")
         ctx.restore()
-    k2 = ease_out_back(prog(lt, sh.m(0) + 2.2, sh.m(0) + 2.6), 2.0)
+    k2 = ease_out_back(prog(lt, sh.m(1) + 0.8, sh.m(1) + 1.2), 2.0)
     if k2 > 0.01:
         ctx.save()
         ctx.translate(540, 560)
@@ -622,4 +624,6 @@ def render_frame(ctx, t):
         _draw_shot(ctx, i, t)
     S.vignette(ctx, 0.35)
     S.grain(ctx, t, 0.05)
+    draw_text(ctx, "※ 국정감사 발언·언론 보도 기반 / 의혹은 확인되지 않은 주장입니다", W / 2, 70, 30,
+              font="black", fill="#FFFFFF", alpha=0.75, stroke=6, stroke_fill="#1E1E22")
     _caption(ctx, t)
