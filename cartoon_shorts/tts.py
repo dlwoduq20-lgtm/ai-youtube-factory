@@ -1,8 +1,10 @@
 """TTS 내레이션.
 
 백엔드 우선순위:
-  1. edge-tts  : 무료 고품질 한국어 신경망 음성 (speech.platform.bing.com 접속 필요)
-  2. espeak-ng : 오프라인 대체 (기계음) — espeakng-loader 패키지에 라이브러리/데이터 포함
+  1. edge-tts  : 무료 고품질 한국어 신경망 음성 남/녀 (speech.platform.bing.com 접속 필요)
+  2. google    : 구글 번역 TTS (translate.googleapis.com) — 자연스러운 한국어 여성 음성 1종.
+                 캐릭터 구분은 피치 시프트로 처리. 비공식 엔드포인트라 상업 배포 전 교체 권장.
+  3. espeak-ng : 오프라인 대체 (기계음) — espeakng-loader 패키지에 라이브러리/데이터 포함
 
 결과는 .cache/tts/ 에 캐시되며 (SR=44100 mono float32 배열, 길이초) 를 돌려준다.
 환경변수 TTS_BACKEND=edge|espeak 로 강제할 수 있다.
@@ -44,6 +46,30 @@ def _edge(text, voice, rate, pitch, out):
     asyncio.run(run())
 
 
+# google 백엔드에서 음성별 (피치 배율, 속도 배율) — 원본은 여성 음성 1종
+GOOGLE_STYLE = {
+    "ko-KR-InJoonNeural": (1.0, 1.18),            # 내레이터: 원음 그대로
+    "ko-KR-HyunsuMultilingualNeural": (0.82, 1.22),  # 남자 캐릭터: 낮게
+    "ko-KR-SunHiNeural": (1.08, 1.22),            # 여자 캐릭터: 살짝 높게
+}
+
+
+def _google(text, voice, rate, pitch, out):
+    import urllib.parse
+    import urllib.request
+    url = ("https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=ko&q="
+           + urllib.parse.quote(text))
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    raw = out + ".raw.mp3"
+    with urllib.request.urlopen(req, timeout=20) as r, open(raw, "wb") as f:
+        f.write(r.read())
+    p, tempo = GOOGLE_STYLE.get(voice, (1.0, 1.15))
+    af = f"rubberband=pitch={p}:tempo={tempo}:formant=preserved" if p != 1.0 else f"atempo={tempo}"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", raw, "-af", af, "-ar", str(SR), out],
+                   check=True)
+    os.remove(raw)
+
+
 def _espeak(text, voice, rate, pitch, out):
     import espeakng_loader
     lib = ctypes.cdll.LoadLibrary(espeakng_loader.get_library_path())
@@ -81,14 +107,14 @@ def synth(text, voice="female", rate="+10%", pitch="+0Hz"):
     voice = VOICES.get(voice, voice)
     backend = os.environ.get("TTS_BACKEND")
     os.makedirs(CACHE, exist_ok=True)
-    order = [backend] if backend else ["edge", "espeak"]
+    order = [backend] if backend else ["edge", "google", "espeak"]
     last = None
     for b in order:
         key = hashlib.sha1(f"{b}|{voice}|{rate}|{pitch}|{text}".encode()).hexdigest()[:16]
         out = os.path.join(CACHE, f"{key}.{'mp3' if b == 'edge' else 'wav'}")
         if not (os.path.exists(out) and os.path.getsize(out) > 0):
             try:
-                (_edge if b == "edge" else _espeak)(text, voice, rate, pitch, out)
+                {"edge": _edge, "google": _google, "espeak": _espeak}[b](text, voice, rate, pitch, out)
             except Exception as e:  # noqa: BLE001 — 다음 백엔드로 폴백
                 last = e
                 if os.path.exists(out):

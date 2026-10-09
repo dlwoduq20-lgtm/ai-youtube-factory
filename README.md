@@ -3,7 +3,7 @@
 정치·외교·젠더 등 사회 이슈를 **만화풍 만평 + 모션그래픽** 세로 쇼츠(1080x1920, 30fps)로 만드는 코드 기반 생성기입니다.
 외부 이미지/음원 없이 도형·텍스트·효과음을 전부 코드로 그려서 저작권 걱정이 없습니다.
 
-## 샘플 2 (해설 애니메이션 스타일 + TTS): `samples/ep02_who_did_it.mp4` (약 60초)
+## 샘플 2 (해설 애니메이션 스타일 + TTS): `samples/ep02_who_did_it.mp4` (약 65초)
 
 **오늘의 만평 #02 — 그 법안, 누가 통과시켰나?**
 
@@ -16,7 +16,8 @@
 - 자막은 화자별 색상(내레이션 흰색 / A 민트 / B 살구 / 동시 노랑)
 
 ```bash
-python render.py ep02_who_did_it          # Edge TTS 사용 (speech.platform.bing.com 접속 필요)
+python render.py ep02_who_did_it          # Edge TTS → 구글 TTS → espeak 순으로 자동 폴백
+TTS_BACKEND=google python render.py ep02_who_did_it   # 구글 TTS 강제 (현재 샘플)
 TTS_BACKEND=espeak python render.py ep02_who_did_it   # 오프라인 기계음
 ```
 
