@@ -25,6 +25,8 @@ def main():
     args = ap.parse_args()
 
     ep = importlib.import_module(f"cartoon_shorts.episodes.{args.episode}")
+    if hasattr(ep, "prepare"):
+        ep.prepare()  # TTS 합성 + 타임라인 계산
     out_dir = os.path.join(ROOT, "samples")
     os.makedirs(out_dir, exist_ok=True)
 
@@ -41,13 +43,17 @@ def main():
     out = args.out or os.path.join(out_dir, f"{args.episode}.mp4")
     wav = out[:-4] + ".wav"
     print("audio...")
-    audio.write_wav(wav, audio.mix(ep.DURATION, ep.cues()))
+    if hasattr(ep, "mix"):
+        track = ep.mix()
+    else:
+        track = audio.mix(ep.DURATION, ep.cues())
+    audio.write_wav(wav, track)
 
     n = int(ep.DURATION * FPS)
     cmd = ["ffmpeg", "-y", "-loglevel", "error",
            "-f", "rawvideo", "-pix_fmt", "bgra", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
            "-i", wav,
-           "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
+           "-c:v", "libx264", "-preset", "medium", "-tune", "animation", "-crf", "21", "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "160k", "-shortest", "-movflags", "+faststart",
            "-metadata", f"title={ep.TITLE}", out]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)

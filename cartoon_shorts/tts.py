@@ -59,9 +59,11 @@ def _espeak(text, voice, rate, pitch, out):
 
     keep = CB(cb)
     lib.espeak_SetSynthCallback(keep)
-    lib.espeak_SetVoiceByName(b"ko")
-    speed = 175 + int(rate.strip("%+") or 0) * (1 if not rate.startswith("-") else -1)
+    variant = {"ko-KR-SunHiNeural": b"ko+f3", "ko-KR-InJoonNeural": b"ko+m3"}.get(voice, b"ko+m1")
+    lib.espeak_SetVoiceByName(variant)
+    speed = int(175 * (1 + int(rate.rstrip("%") or 0) / 100))
     lib.espeak_SetParameter(1, speed, 0)  # espeakRATE
+    lib.espeak_SetParameter(3, 50 + int(pitch.replace("Hz", "") or 0), 0)  # espeakPITCH
     buf = text.encode("utf-8") + b"\0"
     lib.espeak_Synth(buf, len(buf), 0, 0, 0, 0x01, None, None)  # espeakCHARS_UTF8
     lib.espeak_Synchronize()
