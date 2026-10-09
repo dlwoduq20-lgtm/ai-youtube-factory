@@ -31,26 +31,34 @@ VOICE = {
 CAP_COLOR = {"N": "#FFFFFF", "K": "#9FD3F0", "U": "#FFE38A"}
 
 SCRIPT = [
-    ("hook", [("N", "비밀로 하기로 했잖아?!", None)], {"tail": 1.0, "min_tail": 0.9}),
-    ("podium", [("N", "구월 이십삼일 유엔총회, 우크라이나 대통령이 연설 중에,",
-                 "9월 23일 유엔총회, 우크라이나 대통령이 연설 중에,"),
+    ("hook", [("N", "비밀로 해달라며? 근데 그걸 유엔에서 말해버렸다고?", None)],
+     {"tail": 1.0, "min_tail": 0.9}),
+    ("podium", [("N", "지난달 유엔총회. 우크라이나 대통령이 연설하다가 이렇게 말했대.", None),
                 ("U", "북한군 포로 두 명, 한국에 넘겼습니다!",
                  "북한군 포로 2명, 한국에 넘겼습니다!")], {"tail": 0.6}),
-    ("kr", [("N", "한국 정부는 발칵!", None),
-            ("K", "공개 안 하기로 합의했잖아요?!", None)], {"tail": 0.4}),
-    ("ua", [("U", "그런 합의, 없었는데요?", None)], {"tail": 0.8}),
-    ("tug", [("N", "합의했다! 안 했다! 진실 공방 시작!", None)], {"tail": 1.0}),
-    ("calendar", [("N", "구월 이십팔일, 대사대리 불러 항의.", "9월 28일, 대사대리 불러 항의."),
-                  ("N", "시월 이일, 대통령이 공개 사과 요구.", "10월 2일, 대통령이 공개 사과 요구."),
-                  ("N", "그리고 시월 팔일,", "그리고 10월 8일,")], {"tail": 1.8}),
-    ("plane", [("N", "주우크라이나 대사, 본국 소환! 꽤 센 항의 카드야.", None),
-               ("N", "대사관 문은 그대로 열어두고.", None)], {"tail": 0.8}),
-    ("door", [("N", "우크라이나는, 대화의 문은 열려 있다는 입장.", None)], {"tail": 1.0}),
-    ("outro", [("N", "비밀 약속, 누구 말이 맞을까?", None),
-               ("N", "너희 생각은? 댓글로 알려줘!", None)], {"tail": 2.0}),
+    ("risk", [("N", "문제는 이게 원래 비밀이었다는 거야.", None),
+              ("N", "북한에 남은 포로 가족들이 위험해질 수 있거든.", None)], {"tail": 0.6}),
+    ("kr", [("K", "공개 안 하기로 약속했잖아요!", None)], {"tail": 0.4}),
+    ("ua", [("U", "그런 약속, 한 적 없는데요?", None)], {"tail": 0.8}),
+    ("tug", [("N", "한국은 거짓말이라고 하고, 우크라이나는 오해래.", None),
+             ("N", "말이 완전히 엇갈리는 거지.", None)], {"tail": 0.8}),
+    ("calendar", [("N", "한국은 항의하고, 사과를 요구하다가,", None),
+                  ("N", "결국 우크라이나 주재 대사를 불러들였어.", None)], {"tail": 1.8}),
+    ("plane", [("N", "대사관 문을 닫은 건 아니야.", None),
+               ("N", "대신, 우리 화났다는 신호를 확실히 보낸 거지.",
+                "대신, \"우리 화났다\"는 신호를 확실히 보낸 거지.")], {"tail": 0.8}),
+    ("door", [("N", "우크라이나는 대화하겠다고는 하는데, 아직 사과는 없어.", None)], {"tail": 1.4}),
+    ("outro", [("N", "비밀 약속, 누구 말이 맞는 것 같아?", None),
+               ("N", "댓글로 알려줘!", None)], {"tail": 2.4}),
 ]
 
 CAL = ["9.23", "9.28", "10.2", "10.8"]
+
+
+def _cal_flips(sh):
+    """(local_time, 이전, 다음) — 항의(9.28)·사과 요구(10.2)는 첫 대사, 대사 소환(10.8)은 둘째 대사."""
+    a, b = sh.m(0) + 0.1, sh.m(0) + (sh.me(0) - sh.m(0)) * 0.55
+    return [(a, CAL[0], CAL[1]), (b, CAL[1], CAL[2]), (sh.m(1) + 0.2, CAL[2], CAL[3])]
 
 
 def cues(ep):
@@ -72,13 +80,17 @@ def cues(ep):
             c.append((st + 0.3, "boing"))
             c.append((st + sh.dur - 0.9, "boing"))
         if sh.name == "calendar":
-            for j in range(3):
-                c.append((st + sh.m(j), "rip"))
-            c.append((st + sh.me(2), "stamp"))
+            for ft, *_ in _cal_flips(sh):
+                c.append((st + ft, "rip"))
+            c.append((st + sh.me(1) - 0.2, "stamp"))
+        if sh.name == "risk":
+            c.append((st + 0.3, "thud"))
+            c.append((st + sh.m(1), "boing"))
         if sh.name == "plane":
             c.append((st + 0.2, "whoosh"))
         if sh.name == "door":
             c.append((st + 0.6, "slide"))
+            c.append((st + sh.me(0) - 0.4, "stamp"))
         if sh.name == "outro":
             c.append((st + sh.m(1), "pop"))
             c.append((st + sh.m(1) + 0.8, "ding"))
@@ -182,8 +194,58 @@ def shot_podium(ctx, lt, sh, ep):
             ctx.fill()
 
 
+FAMILY = [Doodle(coat="#7D7468", hair="gray", hair_color="#CFCFCF", collar=False),
+          Doodle(coat="#8A6F7A", hair="bob", hair_color="#2F2724", collar=False),
+          Doodle(coat="#6B7E8C", hair="tuft", collar=False)]
+
+
+def shot_risk(ctx, lt, sh, ep):
+    S.planks(ctx, base="#3E4F63", dark="#31404F")
+    danger = lt >= sh.m(1)
+    for i, (P, x, sc) in enumerate(zip(FAMILY, (300, 780, 540), (0.9, 0.9, 0.7))):
+        P.draw(ctx, x, 1180, sc, 1 if x < 540 else -1, pose="down",
+               expr="shock" if danger else "neutral", t=lt + i, sweat=danger)
+    draw_text(ctx, "북한에 남은 포로 가족", 540, 1460, 64, font="black", fill="#F3EBD5")
+    # 비밀 방패: 위험해지면 금이 가며 흔들린다
+    k = max(0.01, ease_out_back(prog(lt, 0.1, 0.5), 1.4))
+    shake = math.sin(lt * 38) * 10 * prog(lt, sh.m(1), sh.m(1) + 0.2)
+    ctx.save()
+    ctx.translate(540 + shake, 400)
+    ctx.scale(k * 0.75, k * 0.75)
+    ctx.new_path()
+    ctx.move_to(-230, -200)
+    ctx.line_to(230, -200)
+    ctx.curve_to(230, 60, 120, 200, 0, 260)
+    ctx.curve_to(-120, 200, -230, 60, -230, -200)
+    ctx.close_path()
+    S.fs(ctx, "#8FAFC9", lw=10)
+    draw_text(ctx, "비밀", 0, 0, 120, font="black", fill="#2E3A4A")
+    if danger:
+        ctx.move_to(-40, -200)
+        ctx.line_to(10, -90)
+        ctx.line_to(-30, -20)
+        ctx.line_to(40, 90)
+        set_rgb(ctx, S.OUT)
+        ctx.set_line_width(10)
+        ctx.stroke()
+    ctx.restore()
+    if danger:
+        kw = max(0.01, ease_out_back(prog(lt, sh.m(1), sh.m(1) + 0.35), 2.0))
+        ctx.save()
+        ctx.translate(820, 260)
+        ctx.scale(kw, kw)
+        ctx.new_path()
+        ctx.move_to(0, -95)
+        ctx.line_to(105, 85)
+        ctx.line_to(-105, 85)
+        ctx.close_path()
+        S.fs(ctx, "#E8B93E", lw=9)
+        draw_text(ctx, "!", 0, 20, 110, font="black", fill="#2E3A4A")
+        ctx.restore()
+
+
 def shot_kr(ctx, lt, sh, ep):
-    close_up(ctx, lt, sh, ep, KR, "K", 1, 420, S.SLATE, S.SLATE_D, "한국 정부", 1)
+    close_up(ctx, lt, sh, ep, KR, "K", 1, 420, S.SLATE, S.SLATE_D, "한국 정부", 0)
 
 
 def shot_ua(ctx, lt, sh, ep):
@@ -202,7 +264,7 @@ def shot_tug(ctx, lt, sh, ep):
     mid = ((ha[0] + hb[0]) / 2, (ha[1] + hb[1]) / 2 + 40)
     S.tube(ctx, [ha, mid, hb], 16, "#C89B5C", lw=5)
     S.folder(ctx, mid[0], mid[1] + 130, 0.6, "비공개 합의", rot=math.sin(lt * 4) * 0.12)
-    for P, p, f, word in ((KR, pa, 1, "했다!"), (UA, pb, -1, "안 했다!")):
+    for P, p, f, word in ((KR, pa, 1, "거짓말!"), (UA, pb, -1, "오해!")):
         P.draw(ctx, p[0], p[1], s, f, pose="pull", expr="angry", mouth=0.3 + 0.3 * abs(math.sin(lt * 9)),
                t=lt, rot=-0.15 * f, bob=False, sweat=True)
         label(ctx, word, p[0] + f * 60, 600, ease_out_back(prog(lt, 0.3 + (f < 0) * 0.4, 0.7 + (f < 0) * 0.4)))
@@ -210,17 +272,18 @@ def shot_tug(ctx, lt, sh, ep):
 
 def shot_calendar(ctx, lt, sh, ep):
     S.planks(ctx, base=S.SLATE, dark=S.SLATE_D, seed=7)
+    flips = _cal_flips(sh)
     cur = CAL[0]
-    for j in range(3):
-        if lt >= sh.m(j):
-            cur = CAL[j + 1]
+    for ft, a, b in flips:
+        if lt >= ft:
+            cur = b
     sub = "외교 갈등 일지"
     S.calendar(ctx, 560, 1000, 1.0, cur, sub, seed=len(cur))
-    for j in range(3):
-        k = (lt - sh.m(j)) / 0.9
+    for j, (ft, a, b) in enumerate(flips):
+        k = (lt - ft) / 0.9
         if 0 <= k < 1:
-            S.flying_page(ctx, 560, 1000, 1.0, k, CAL[j], sub, seed=j, direction=-1 if j % 2 else 1)
-    S.stamp(ctx, 560, 1060, "대사 소환!", prog(lt, sh.me(2), sh.me(2) + 0.5), size=105, rot=-0.15)
+            S.flying_page(ctx, 560, 1000, 1.0, k, a, sub, seed=j, direction=-1 if j % 2 else 1)
+    S.stamp(ctx, 560, 1060, "대사 소환!", prog(lt, sh.me(1) - 0.2, sh.me(1) + 0.3), size=105, rot=-0.15)
 
 
 def _plane(ctx, x, y, s):
@@ -264,7 +327,7 @@ def shot_plane(ctx, lt, sh, ep):
     ctx.set_dash([])
     _plane(ctx, x, y, 1.0)
     draw_text(ctx, "대사 귀국", x, y + 250, 70, font="black", fill="#2E3A4A", stroke=10, stroke_fill="#FFFFFF")
-    label(ctx, "주우크라이나 대사관: 운영 중", 540, 1560, ease_out_back(prog(lt, sh.m(1), sh.m(1) + 0.4)),
+    label(ctx, "주우크라이나 대사관: 운영 중", 540, 1560, ease_out_back(prog(lt, sh.m(0) + 0.3, sh.m(0) + 0.7)),
           size=56)
 
 
@@ -296,6 +359,7 @@ def shot_door(ctx, lt, sh, ep):
     rrect(ctx, 220, 500, 640, 1040, 10)
     S.fs(ctx, None, lw=14)
     UA.draw(ctx, 690, 1530, 0.9, -1, pose="wave", expr="smug", t=lt)
+    S.stamp(ctx, 540, 1700, "사과: 아직", prog(lt, sh.me(0) - 0.4, sh.me(0) + 0.1), size=110, rot=-0.08)
 
 
 def shot_outro(ctx, lt, sh, ep):
@@ -313,6 +377,7 @@ CAMERA = {
     "hook": (540, 1000, 0.1), "podium": (540, 1100, 0.07), "kr": (420, 900, 0.06),
     "ua": (660, 900, 0.06), "tug": (540, 1200, 0.05), "calendar": (560, 1000, 0.08),
     "plane": (540, 900, 0.04), "door": (540, 1000, 0.06), "outro": (540, 1000, 0.04),
+    "risk": (540, 1000, 0.08),
 }
 
 EP = Explainer(SCRIPT, VOICE, CAP_COLOR, SHOT_FN, CAMERA, cues,
