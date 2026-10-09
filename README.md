@@ -68,6 +68,7 @@ cartoon_shorts/
   episodes/
     ep01_gridlock.py   # 에피소드 = 타임라인(장면 함수) + 자막 + 효과음 큐
 render.py        # 프레임 → ffmpeg 파이프 → mp4
+branding.py      # 채널 프로필/배너 이미지 → samples/branding/
 ```
 
 새 이슈(외교, 젠더 등)는 `episodes/` 에 파일을 하나 추가해 `TITLE`, `DURATION`, `cues()`, `render_frame(ctx, t)` 만 구현하면 됩니다.
