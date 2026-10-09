@@ -7,7 +7,7 @@
   3. espeak-ng : 오프라인 대체 (기계음) — espeakng-loader 패키지에 라이브러리/데이터 포함
 
 결과는 .cache/tts/ 에 캐시되며 (SR=44100 mono float32 배열, 길이초) 를 돌려준다.
-환경변수 TTS_BACKEND=edge|espeak 로 강제할 수 있다.
+환경변수 TTS_BACKEND=edge|google|espeak 로 강제할 수 있다.
 """
 import asyncio
 import ctypes
@@ -39,6 +39,13 @@ def _decode(path):
 
 def _edge(text, voice, rate, pitch, out):
     import edge_tts
+    import edge_tts.communicate as ec
+
+    # edge-tts 는 certifi 번들만 신뢰한다 → 사내/샌드박스 프록시 CA(SSL_CERT_FILE)도 추가
+    ca = os.environ.get("SSL_CERT_FILE")
+    if ca and os.path.exists(ca) and not getattr(ec, "_extra_ca", False):
+        ec._SSL_CTX.load_verify_locations(cafile=ca)
+        ec._extra_ca = True
 
     async def run():
         await edge_tts.Communicate(text, voice, rate=rate, pitch=pitch).save(out)

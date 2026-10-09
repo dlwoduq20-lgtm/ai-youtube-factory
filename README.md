@@ -3,21 +3,24 @@
 정치·외교·젠더 등 사회 이슈를 **만화풍 만평 + 모션그래픽** 세로 쇼츠(1080x1920, 30fps)로 만드는 코드 기반 생성기입니다.
 외부 이미지/음원 없이 도형·텍스트·효과음을 전부 코드로 그려서 저작권 걱정이 없습니다.
 
-## 샘플 2 (해설 애니메이션 스타일 + TTS): `samples/ep02_who_did_it.mp4` (약 65초)
+## 샘플 2 (해설 애니메이션 스타일 + TTS): `samples/ep02_who_did_it.mp4` (약 60초)
 
 **오늘의 만평 #02 — 그 법안, 누가 통과시켰나?**
+
+> 프록시/사내망 환경에서 Edge TTS 가 인증서 오류로 실패하면 `SSL_CERT_FILE` 에 CA 번들 경로를 지정하세요 (edge-tts 가 자체 certifi 번들만 쓰기 때문에 `tts.py` 가 해당 CA 를 추가로 신뢰하도록 처리).
 
 해설 애니메이션 쇼츠 스타일: 풀스크린 일러스트, 흰 동그란 얼굴 캐릭터, 차분한 슬레이트·카키 톤,
 나무판 벽 배경, 화면 중앙의 큼직한 단어 단위 자막, 천천히 밀고 들어가는 카메라.
 
-- **TTS 내레이션 + 캐릭터 대사**: 내레이터(남), A당 의원(남), B당 의원(여) 3개 음성. 대사 길이에 맞춰 샷 타이밍이 자동 배치됨
+- **TTS 내레이션 + 캐릭터 대사**: 내레이터(남, InJoon), A당 의원(남, Hyunsu), B당 의원(여, SunHi) — Edge 신경망 3개 음성. 대사 길이에 맞춰 샷 타이밍이 자동 배치됨
 - **립싱크**: 각 화자 음성의 음량 엔벨로프로 입 모양을 움직임
 - **장면**: 국회 외경 → 법률안 작성 → 민생법안 등장 → A/B 의원 클로즈업 → 줄다리기 → 달력 찢겨 날아가는 시간 경과 → 장바구니 물가 화살표 → 빗속 한숨 쉬는 국민 → 의사봉 3타 '가결' → "이게 다 저희 덕분!" → 1년 전 원안과 100% 동일 → 댓글 유도
 - 자막은 화자별 색상(내레이션 흰색 / A 민트 / B 살구 / 동시 노랑)
 
 ```bash
 python render.py ep02_who_did_it          # Edge TTS → 구글 TTS → espeak 순으로 자동 폴백
-TTS_BACKEND=google python render.py ep02_who_did_it   # 구글 TTS 강제 (현재 샘플)
+TTS_BACKEND=edge python render.py ep02_who_did_it     # Edge 신경망 음성 강제 (현재 샘플)
+TTS_BACKEND=google python render.py ep02_who_did_it   # 구글 TTS 강제
 TTS_BACKEND=espeak python render.py ep02_who_did_it   # 오프라인 기계음
 ```
 
@@ -55,7 +58,7 @@ cartoon_shorts/
   engine.py      # 이징, 한글 텍스트 캐시, 말풍선/집중선/버스트/망점 등 모션그래픽 프리미티브
   characters.py  # 캐리커처 정치인(표정·포즈·당 배지), 시민 캐릭터
   audio.py       # BGM/효과음 합성 + 믹싱
-  tts.py         # TTS (edge-tts → espeak-ng 폴백, 캐시)
+  tts.py         # TTS (edge-tts → 구글 → espeak-ng 폴백, 캐시)
   squire.py      # 해설 애니메이션 스타일 캐릭터/배경/소품
   episodes/
     ep01_gridlock.py   # 에피소드 = 타임라인(장면 함수) + 자막 + 효과음 큐
