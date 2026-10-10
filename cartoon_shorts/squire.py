@@ -153,7 +153,8 @@ def spotlight(ctx, x, y_top, w_top, w_bot, y_bot, alpha=0.35):
 # ================================================================ character
 class Person:
     def __init__(self, coat="#4E5A6B", tie=None, hair="part", hair_color="#4A3426",
-                 badge=False, hood=False, pants="#3A3F4A", name=""):
+                 badge=False, hood=False, pants="#3A3F4A", name="", glasses=False):
+        self.glasses = glasses
         self.coat, self.tie, self.hair, self.hair_color = coat, tie, hair, hair_color
         self.badge, self.hood, self.pants, self.name = badge, hood, pants, name
 
@@ -369,6 +370,15 @@ class Person:
                     set_rgb(ctx, OUT)
                     ctx.set_line_width(6)
                     ctx.stroke()
+        if self.glasses:
+            for ex in (ex1, ex2):
+                ellipse(ctx, ex, ey, 30, 26)
+                fs(ctx, (0.85, 0.93, 1.0, 0.35), lw=6)
+            ctx.move_to(ex1 + 30, ey - 4)
+            ctx.line_to(ex2 - 30, ey - 4)
+            set_rgb(ctx, OUT)
+            ctx.set_line_width(6)
+            ctx.stroke()
         if expr in ("angry", "sad"):
             sg = 1 if expr == "angry" else -1
             for ex, d in ((ex1, 1), (ex2, -1)):
