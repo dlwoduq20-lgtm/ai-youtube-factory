@@ -51,12 +51,13 @@ def _plain(text):
 
 class Episode:
     def __init__(self, title, script, shot_fns, voices, cap_colors=None, camera=None,
-                 bgm_style="explain", bpm=92, bgm_gain=0.26):
+                 bgm_style="explain", bpm=92, bgm_gain=0.26, cap_y=CAP_Y):
         self.title, self.script, self.shot_fns = title, script, shot_fns
         self.voices = voices
         self.cap_colors = cap_colors or {}
         self.camera = camera or {}
         self.bgm_style, self.bpm, self.bgm_gain = bgm_style, bpm, bgm_gain
+        self.cap_y = cap_y
         self.shots, self.lines, self.env = [], [], {}
         self.voice_track = None
         self.duration = 0.0
@@ -73,8 +74,9 @@ class Episode:
             for spk, text in lines:
                 parts, words = [], None
                 for sp in (("A", "B") if spk == "AB" else (spk,)):
-                    v, r, p = self.voices[sp]
-                    x, _, w = tts.synth_ex(_plain(text), v, rate=r, pitch=p)
+                    v, r, p, *shift = self.voices[sp]  # 4번째 값: (피치 배율, 템포 배율) 음색 변조
+                    x, _, w = tts.synth_ex(_plain(text), v, rate=r, pitch=p,
+                                           shift=shift[0] if shift else None)
                     parts.append((sp, x))
                     words = words or w
                 d = max(len(x) for _, x in parts) / audio.SR
@@ -175,7 +177,7 @@ class Episode:
         total = sum(sizes) + gap * (len(words) - 1)
         fit = min(1.0, 1000 / max(total, 1))
         ctx.save()
-        ctx.translate(W / 2, CAP_Y)
+        ctx.translate(W / 2, self.cap_y)
         ctx.scale(sc * fit, sc * fit)
         x = -total / 2
         for (w, hl), wd in zip(words, sizes):

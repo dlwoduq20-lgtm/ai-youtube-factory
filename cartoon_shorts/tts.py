@@ -123,8 +123,20 @@ def synth(text, voice="female", rate="+10%", pitch="+0Hz"):
     return x, d
 
 
-def synth_ex(text, voice="female", rate="+10%", pitch="+0Hz"):
-    """텍스트 → (samples, seconds, words). words 는 [(start, end, 단어)] (edge 백엔드만, 그 외 None)."""
+def _shift(x, factor, tempo):
+    """음색 변조 (rubberband, 포먼트도 같이 올려서 아이 목소리처럼)."""
+    raw = subprocess.run(
+        ["ffmpeg", "-v", "error", "-f", "f32le", "-ar", str(SR), "-ac", "1", "-i", "-",
+         "-af", f"rubberband=pitch={factor}:tempo={tempo}", "-f", "f32le", "-"],
+        input=x.astype(np.float32).tobytes(), check=True, capture_output=True).stdout
+    return np.frombuffer(raw, dtype=np.float32).copy()
+
+
+def synth_ex(text, voice="female", rate="+10%", pitch="+0Hz", shift=None):
+    """텍스트 → (samples, seconds, words). words 는 [(start, end, 단어)] (edge 백엔드만, 그 외 None).
+
+    shift=(피치 배율, 템포 배율) 이면 합성 후 음색을 변조한다 (예: 아기 목소리 (1.3, 0.95)).
+    """
     voice = VOICES.get(voice, voice)
     backend = os.environ.get("TTS_BACKEND")
     os.makedirs(CACHE, exist_ok=True)
@@ -155,5 +167,10 @@ def synth_ex(text, voice="female", rate="+10%", pitch="+0Hz"):
             if words:
                 sh = head / SR
                 words = [(max(0.0, a - sh), max(0.0, b2 - sh), w) for a, b2, w in words]
+        if shift:
+            factor, tempo = shift
+            x = _shift(x, factor, tempo)
+            if words:
+                words = [(a / tempo, b2 / tempo, w) for a, b2, w in words]
         return x, len(x) / SR, words
     raise RuntimeError(f"TTS 실패: {last}")

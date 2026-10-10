@@ -115,7 +115,8 @@ def _note(freq, dur, kind="pluck"):
 
 
 def bgm(duration, bpm=112, seed=4, style="comic"):
-    """style=comic: 통통 튀는 C 메이저 / explain: 잔잔한 피치카토 A 마이너 (해설용)."""
+    """style=comic: 통통 튀는 C 메이저 / explain: 잔잔한 피치카토 A 마이너 (해설용)
+    / cute: 오르골 느낌의 높은 C 메이저, 킥 없음 (육아·일상용)."""
     rng = np.random.default_rng(seed)
     out = np.zeros(int(duration * SR) + SR)
     beat = 60 / bpm
@@ -125,6 +126,9 @@ def bgm(duration, bpm=112, seed=4, style="comic"):
     if style == "explain":
         bass_line = [110.0, 87.31, 130.81, 98.0]  # Am F C G
         scale = [440.0, 523.25, 587.33, 659.25, 783.99, 880.0]
+    if style == "cute":
+        bass_line = [130.81, 174.61, 110.0, 196.0]  # C F Am G
+        scale = [1046.5, 1174.66, 1318.51, 1567.98, 1760.0, 2093.0]
     motif = [rng.integers(0, len(scale)) if rng.random() > 0.25 else -1 for _ in range(16)]
     i = 0
     t = 0.0
@@ -134,11 +138,13 @@ def bgm(duration, bpm=112, seed=4, style="comic"):
         if i % 2 == 0:
             root = bass_line[bar % 4]
             seg = _note(root if (i // 2) % 2 == 0 else root * 1.5, step * 0.9, "bass")
+            if style == "cute":
+                seg = seg * 0.45
             out[pos:pos + len(seg)] += seg
             if (i // 2) % 2 == 0 and style == "comic":
                 k = _note(0, 0.2, "kick")
                 out[pos:pos + len(k)] += k
-        h = _note(i, 0.05, "hat") * (1 if style == "comic" else 0.5)
+        h = _note(i, 0.05, "hat") * {"comic": 1, "cute": 0.25}.get(style, 0.5)
         out[pos:pos + len(h)] += h
         m = motif[i % 16]
         if m >= 0 and bar % 4 != 3:
