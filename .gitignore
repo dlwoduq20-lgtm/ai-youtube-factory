@@ -3,3 +3,7 @@ __pycache__/
 samples/*.png
 samples/*.wav
 .cache/
+ref/*.mp4
+ref/*.webm
+ref/*.wav
+ref/*.info.json
