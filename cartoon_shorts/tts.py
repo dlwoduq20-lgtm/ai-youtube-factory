@@ -12,6 +12,7 @@
 import asyncio
 import ctypes
 import hashlib
+import json
 import os
 import subprocess
 
@@ -40,8 +41,22 @@ def _decode(path):
 def _edge(text, voice, rate, pitch, out):
     import edge_tts
 
+    # aiohttp 는 HTTPS_PROXY 환경변수를 자동으로 쓰지 않으므로 명시적으로 넘긴다
+    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+
     async def run():
-        await edge_tts.Communicate(text, voice, rate=rate, pitch=pitch).save(out)
+        comm = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, proxy=proxy,
+                                    boundary="WordBoundary")
+        words = []
+        with open(out, "wb") as f:
+            async for ch in comm.stream():
+                if ch["type"] == "audio":
+                    f.write(ch["data"])
+                elif ch["type"] == "WordBoundary":
+                    st = ch["offset"] / 1e7
+                    words.append([st, st + ch["duration"] / 1e7, ch["text"]])
+        with open(out + ".json", "w", encoding="utf-8") as f:
+            json.dump(words, f, ensure_ascii=False)
 
     asyncio.run(run())
 
@@ -104,6 +119,12 @@ def _espeak(text, voice, rate, pitch, out):
 
 def synth(text, voice="female", rate="+10%", pitch="+0Hz"):
     """텍스트 → (samples, seconds). voice 는 VOICES 키 또는 edge 음성 이름."""
+    x, d, _ = synth_ex(text, voice, rate, pitch)
+    return x, d
+
+
+def synth_ex(text, voice="female", rate="+10%", pitch="+0Hz"):
+    """텍스트 → (samples, seconds, words). words 는 [(start, end, 단어)] (edge 백엔드만, 그 외 None)."""
     voice = VOICES.get(voice, voice)
     backend = os.environ.get("TTS_BACKEND")
     os.makedirs(CACHE, exist_ok=True)
@@ -122,9 +143,17 @@ def synth(text, voice="female", rate="+10%", pitch="+0Hz"):
                 print(f"[tts] {b} 실패 → 폴백: {type(e).__name__}")
                 continue
         x = _decode(out)
-        # 앞뒤 무음 정리
+        words = None
+        if os.path.exists(out + ".json"):
+            with open(out + ".json", encoding="utf-8") as f:
+                words = json.load(f)
+        # 앞쪽 무음 정리 (단어 타이밍도 같이 당김), 뒤쪽 무음 정리
         nz = np.nonzero(np.abs(x) > 0.01)[0]
         if len(nz):
-            x = x[max(0, nz[0] - 600): nz[-1] + 2000]
-        return x, len(x) / SR
+            head = max(0, nz[0] - 600)
+            x = x[head: nz[-1] + 2000]
+            if words:
+                sh = head / SR
+                words = [(max(0.0, a - sh), max(0.0, b2 - sh), w) for a, b2, w in words]
+        return x, len(x) / SR, words
     raise RuntimeError(f"TTS 실패: {last}")
