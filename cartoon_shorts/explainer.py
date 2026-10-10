@@ -36,13 +36,14 @@ class Shot:
 
 class Explainer:
     def __init__(self, script, voice, cap_color, shot_fns, camera, cues_fn, notice="",
-                 bpm=118):
+                 bpm=118, chapters=None):
         """script: [(샷 이름, [(화자, TTS 문장, 자막 or None)], 옵션)]
         voice: 화자 → (edge 음성, 속도, 피치, 추가 피치 배율). 동시 발화는 화자 문자를 이어 쓴다 ("AB").
-        shot_fns: 샷 이름 → fn(ctx, lt, sh, ep).  cues_fn(ep) → [(t, kind[, dur])]."""
+        shot_fns: 샷 이름 → fn(ctx, lt, sh, ep).  cues_fn(ep) → [(t, kind[, dur])].
+        chapters: [(라벨, 그 단계가 시작되는 샷 이름)] — 주면 화면 위에 단계 진행 바를 그린다."""
         self.script, self.voice, self.cap_color = script, voice, cap_color
         self.shot_fns, self.camera, self.cues_fn = shot_fns, camera, cues_fn
-        self.notice, self.bpm = notice, bpm
+        self.notice, self.bpm, self.chapters = notice, bpm, chapters or []
         self.shots, self.lines, self.env, self.cues = [], [], {}, []
         self.duration, self.voice_track = 0.0, None
 
@@ -189,7 +190,41 @@ class Explainer:
         if self.notice:
             draw_text(ctx, self.notice, W / 2, 70, 30, font="black", fill="#FFFFFF", alpha=0.75,
                       stroke=6, stroke_fill="#1E1E22")
+        if self.chapters:
+            self._progress(ctx, t)
         self._caption(ctx, t)
+
+    def chapter_starts(self):
+        start = {sh.name: sh.start for sh in self.shots}
+        return [start[name] for _, name in self.chapters] + [self.duration]
+
+    def _progress(self, ctx, t):
+        """단계 진행 바: 지난 단계는 채워지고, 현재 단계는 시간에 따라 차오르며, 시작할 때 도장처럼 쾅."""
+        starts = self.chapter_starts()
+        n = len(self.chapters)
+        x0, w, gap, y = 70, (W - 140 - 12 * (n - 1)) / n, 12, 140
+        for i, (name, _) in enumerate(self.chapters):
+            a, b = starts[i], starts[i + 1]
+            x = x0 + i * (w + gap)
+            pop = 1 + 0.25 * (1 - ease_out_back(prog(t, a, a + 0.35), 2.5)) if t >= a else 1
+            ctx.save()
+            ctx.translate(x + w / 2, y)
+            ctx.scale(pop, pop)
+            rrect(ctx, -w / 2, -26, w, 52, 26)
+            S.fs(ctx, "#F3EBD5", lw=6, alpha=0.9)
+            k = prog(t, a, b)
+            if k > 0:
+                ctx.save()
+                rrect(ctx, -w / 2, -26, w, 52, 26)
+                ctx.clip()
+                ctx.rectangle(-w / 2, -26, w * k, 52)
+                set_rgb(ctx, S.RUST)
+                ctx.fill()
+                ctx.restore()
+            on = t >= a
+            draw_text(ctx, name, 0, 2, 34, font="black", fill="#FFFFFF" if k > 0.5 else "#2E3A4A",
+                      alpha=1.0 if on else 0.6)
+            ctx.restore()
 
 
 # ---------------------------------------------------------------- 공용 샷 부품
