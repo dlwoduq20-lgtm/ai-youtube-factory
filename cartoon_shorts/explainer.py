@@ -7,6 +7,7 @@ TTS 합성·타임라인 배치·립싱크·자막·전환·믹싱은 이 모듈
     prepare, render_frame, mix = EP.prepare, EP.render_frame, EP.mix
 """
 import math
+import os
 
 import numpy as np
 
@@ -19,6 +20,9 @@ TRANS = 0.3  # 샷 전환 시간
 LEAD = 0.25  # 샷 시작 후 첫 대사까지
 GAP = 0.08  # 대사 사이
 TAIL = 0.5  # 샷 끝 여운 배율 (숏폼 템포)
+# 쇼츠 피드에서 유튜브 UI(제목·채널·구독, 오른쪽 버튼)에 가려지는 영역. 핵심 정보는 이 밖에 둔다.
+SAFE_BOTTOM = 1440  # 이 아래는 하단 UI
+SAFE_RIGHT = 930  # 이 오른쪽 + SAFE_BOTTOM 위 900px 까지는 좋아요·댓글 버튼
 
 
 class Shot:
@@ -32,6 +36,19 @@ class Shot:
 
     def me(self, i):
         return self.marks[i][1]
+
+    def at(self, i, word, nth=0):
+        """i 번째 대사에서 word 가 발음되는 시점(로컬 시간) 추정.
+        TTS 문장에서 word 앞까지의 글자 수 비율로 대사 길이를 나눈다 (공백 제외)."""
+        text = self.lines[i][1]
+        pos = -1
+        for _ in range(nth + 1):
+            pos = text.find(word, pos + 1)
+        if pos < 0:
+            raise ValueError(f"{self.name}: '{word}' 가 {i}번째 대사에 없음")
+        before = len(text[:pos].replace(" ", ""))
+        total = max(1, len(text.replace(" ", "")))
+        return self.m(i) + (self.me(i) - self.m(i)) * before / total
 
 
 class Explainer:
@@ -193,6 +210,11 @@ class Explainer:
         if self.chapters:
             self._progress(ctx, t)
         self._caption(ctx, t)
+        if os.environ.get("SAFE_GUIDE"):  # 스틸컷 점검용: 가려지는 영역 표시
+            ctx.rectangle(0, SAFE_BOTTOM, W, H - SAFE_BOTTOM)
+            ctx.rectangle(SAFE_RIGHT, SAFE_BOTTOM - 900, W - SAFE_RIGHT, 900)
+            set_rgb(ctx, "#FF0000", 0.25)
+            ctx.fill()
 
     def chapter_starts(self):
         start = {sh.name: sh.start for sh in self.shots}

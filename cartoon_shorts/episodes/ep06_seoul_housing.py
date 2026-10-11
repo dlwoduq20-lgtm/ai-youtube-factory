@@ -23,7 +23,6 @@ DURATION = 48.0
 
 MP = Doodle(coat="#2F3E5C", tie="#C9473B", hair="cap", hair_color="#2A2420", badge=True)
 FSC = Doodle(coat="#3A3F48", tie="#5B6E8C", hair="gray", hair_color="#CFCFCF", glasses=True, badge=True)
-YOUNG = Doodle(coat="#5C7A8C", hair="tuft", collar=False)
 CIT = Doodle(coat="#6F7F63", hair="beanie", hair_color="#C25B3F", collar=False)
 
 VOICE = {
@@ -64,13 +63,23 @@ CHAPTERS = [("의문", "hook"), ("배경", "loan"), ("반응", "audit"), ("결�
 
 # 서울 지도 위 구 위치(대략)와 10월 첫째 주 변동률(%)
 DISTRICTS = [("도봉", 640, 330, 0.32), ("강북", 560, 440, 0.35), ("서대문", 400, 620, 0.36),
-             ("관악", 470, 1010, 0.33), ("금천", 330, 1080, 0.34),
-             ("서초", 620, 960, -0.27), ("강남", 760, 930, -0.34), ("송파", 880, 840, -0.19)]
+             ("관악", 430, 1010, 0.33), ("금천", 260, 1060, 0.34),
+             ("서초", 610, 970, -0.27), ("강남", 730, 900, -0.34), ("송파", 830, 790, -0.19)]
 BLUE, RED = "#4F7A9C", "#C9473B"
 
 
 def _frac(sh, i, f):
     return sh.m(i) + (sh.me(i) - sh.m(i)) * f
+
+
+def _loan_times(sh):
+    """6억·4억·2억 막대가 각각 그 금액을 말하는 순간 등장."""
+    return [sh.at(0, "육억"), sh.at(1, "사억"), sh.at(1, "이억")]
+
+
+def _district_time(sh, name):
+    """하락 3구는 '강남 삼 구' 에서 함께, 상승 구는 내레이션이 그 이름을 부르는 순간."""
+    return sh.at(0, "강남") if dict((d[0], d[3]) for d in DISTRICTS)[name] < 0 else sh.at(1, name)
 
 
 def cues(ep):
@@ -83,29 +92,27 @@ def cues(ep):
             c.append((st, "thud"))
             c.append((st + sh.m(1), "boing"))
         if sh.name == "loan":
-            c.append((st + 0.4, "stamp"))
-            c.append((st + _frac(sh, 1, 0.35), "fall"))
-            c.append((st + _frac(sh, 1, 0.75), "fall"))
+            for t in _loan_times(sh):
+                c.append((st + t, "fall"))
         if sh.name == "map":
-            for k in range(3):
-                c.append((st + _frac(sh, 0, 0.55) + k * 0.15, "pop"))
-            for k in range(5):
-                c.append((st + _frac(sh, 1, 0.05 + k * 0.1), "pop"))
-            c.append((st + _frac(sh, 1, 0.8), "stamp"))
+            for name, *_ in DISTRICTS:
+                c.append((st + _district_time(sh, name), "pop"))
+            c.append((st + sh.at(1, "팔십칠"), "stamp"))
         if sh.name == "audit":
             c.append((st + sh.m(0), "slide"))
             c.append((st + sh.m(1), "slide"))
         if sh.name == "income":
+            a, b = sh.at(0, "열"), sh.at(0, "십 년")
             for k in range(10):
-                c.append((st + _frac(sh, 0, 0.1 + k * 0.07), "tick"))
-            c.append((st + _frac(sh, 1, 0.6), "thud"))
+                c.append((st + a + (b - a) * k / 10, "tick"))
+            c.append((st + sh.at(1, "일억"), "thud"))
         if sh.name == "supply":
             c.append((st + 0.3, "stamp"))
             for k in range(4):
-                c.append((st + _frac(sh, 0, 0.5 + k * 0.1), "pop"))
+                c.append((st + sh.at(0, "공급") + k * 0.15, "pop"))
         if sh.name == "vote":
-            c.append((st + sh.m(1), "pop"))
-            c.append((st + _frac(sh, 1, 0.5), "pop"))
+            c.append((st + sh.at(1, "일 번"), "pop"))
+            c.append((st + sh.at(1, "이 번"), "pop"))
             c.append((st + sh.m(2), "ding"))
     return c
 
@@ -147,25 +154,25 @@ def shot_hook(ctx, lt, sh, ep):
     ctx.fill()
     wob = math.sin(lt * 6) * 10
     draw_text(ctx, "강남", 270, 360, 150, font="black", fill="#DCEAF3")
-    draw_text(ctx, "서울", 810, 360, 150, font="black", fill="#F7D9D4")
-    arrow(ctx, 270, 820 + wob, 1.0, False, BLUE)
-    arrow(ctx, 810, 820 - wob, 1.0, True, RED)
-    draw_text(ctx, "5주째 ↓", 270, 1130, 76, font="black", fill="#DCEAF3")
-    draw_text(ctx, "87주째 ↑", 810, 1130, 76, font="black", fill="#FFFFFF")
+    draw_text(ctx, "서울", 790, 360, 150, font="black", fill="#F7D9D4")
+    arrow(ctx, 270, 760 + wob, 0.85, False, BLUE)
+    arrow(ctx, 790, 760 - wob, 0.85, True, RED)
+    draw_text(ctx, "5주째 하락", 270, 1120, 62, font="black", fill="#DCEAF3")
+    draw_text(ctx, "87주째 상승", 780, 1120, 62, font="black", fill="#FFFFFF")
     sc = 1 + 0.12 * math.sin(lt * 8)
-    draw_text(ctx, "???", 540, 1560, 220, font="black", fill="#E8B93E", stroke=16, stroke_fill="#1E1E22", scale=sc)
+    draw_text(ctx, "???", 540, 720, 130, font="black", fill="#E8B93E", stroke=14, stroke_fill="#1E1E22", scale=sc)
 
 
 def shot_loan(ctx, lt, sh, ep):
     S.desk(ctx)
     draw_text(ctx, "수도권 주택담보대출 한도", 540, 250, 64, font="black", fill="#F3EBD5",
               stroke=10, stroke_fill="#2E2A28")
-    tiers = (("15억 이하", 6, sh.m(0) + 0.3), ("15~25억", 4, _frac(sh, 1, 0.35)), ("25억 초과", 2, _frac(sh, 1, 0.75)))
+    tiers = tuple(zip(("15억 이하", "15~25억", "25억 초과"), (6, 4, 2), _loan_times(sh)))
     for i, (name, amt, t0) in enumerate(tiers):
         k = ease_out_back(prog(lt, t0, t0 + 0.35), 1.6)
         if k <= 0.01:
             continue
-        x = 220 + i * 320
+        x = 200 + i * 290
         h = 110 * amt * ease_out_cubic(prog(lt, t0, t0 + 0.5))
         rrect(ctx, x - 110, 1130 - h, 220, h, 18)
         S.fs(ctx, (RED, "#D9874A", "#9AA3AE")[i], lw=8)
@@ -173,8 +180,8 @@ def shot_loan(ctx, lt, sh, ep):
                   stroke_fill="#2E2A28", scale=k)
         draw_text(ctx, name, x, 1190, 50, font="black", fill="#2E2A28", scale=k)
     if lt >= sh.m(1):
-        draw_text(ctx, "비쌀수록 대출 ↓", 540, 1480, 70, font="black", fill=RED, stroke=10, stroke_fill="#FFFFFF",
-                  alpha=prog(lt, _frac(sh, 1, 0.8), _frac(sh, 1, 0.95)))
+        draw_text(ctx, "비쌀수록 대출 ↓", 540, 1380, 70, font="black", fill=RED, stroke=10, stroke_fill="#FFFFFF",
+                  alpha=prog(lt, sh.at(1, "이억"), sh.at(1, "이억") + 0.3))
 
 
 def _seoul(ctx):
@@ -201,8 +208,7 @@ def shot_map(ctx, lt, sh, ep):
     _seoul(ctx)
     for name, x, y, v in DISTRICTS:
         up = v > 0
-        t0 = _frac(sh, 1, 0.05 + 0.1 * [d[0] for d in DISTRICTS if d[3] > 0].index(name)) if up else \
-            _frac(sh, 0, 0.55) + 0.15 * [d[0] for d in DISTRICTS if d[3] < 0].index(name)
+        t0 = _district_time(sh, name)
         k = ease_out_back(prog(lt, t0, t0 + 0.35), 2.0)
         if k <= 0.01:
             continue
@@ -214,8 +220,8 @@ def shot_map(ctx, lt, sh, ep):
         draw_text(ctx, name, 0, -22, 44, font="black", fill="#FFFFFF")
         draw_text(ctx, f"{'↑' if up else '↓'}{abs(v):.2f}%", 0, 30, 34, font="black", fill="#FFFFFF")
         ctx.restore()
-    S.stamp(ctx, 540, 1500, "87주 연속 · 역대 최장", prog(lt, _frac(sh, 1, 0.8), _frac(sh, 1, 0.8) + 0.45),
-            size=80, rot=-0.06)
+    t87 = sh.at(1, "팔십칠")
+    S.stamp(ctx, 540, 1390, "87주 연속 · 역대 최장", prog(lt, t87, t87 + 0.45), size=72, rot=-0.04)
 
 
 def shot_audit(ctx, lt, sh, ep):
@@ -230,35 +236,39 @@ def shot_audit(ctx, lt, sh, ep):
                expr=("angry" if spk == "P" else "deadpan") if active else "neutral",
                mouth=ep.mouth(spk, sh.start + lt) * 1.3, t=lt + j, bob=spk == "P")
         label(ctx, name, x, 280, 1.0 if active else 0.75, fill="#F3EBD5" if active else "#B9B2A0", size=56)
-    rrect(ctx, 80, 1420, 920, 90, 20)  # 국감 명패 책상
+    rrect(ctx, 80, 1420, 920, 90, 20)  # 국감 책상
     S.fs(ctx, "#856246", lw=8)
-    draw_text(ctx, "국정감사", 540, 1466, 50, font="black", fill="#F3EBD5")
+    draw_text(ctx, "국정감사", 540, 420, 50, font="black", fill="#F3EBD5", stroke=8, stroke_fill="#2E2A28")
 
 
 def shot_income(ctx, lt, sh, ep):
     S.desk(ctx)
-    k = ease_out_back(prog(lt, 0.05, 0.4), 1.4)
-    card(ctx, 540, 560, 900, 620, k, rot=-0.02)
-    draw_text(ctx, "서울 아파트 = 연 소득 × 10", 0, -230, 60, font="black", fill="#2E3A4A")
-    n = int(10 * prog(lt, _frac(sh, 0, 0.1), _frac(sh, 0, 0.8)) + 0.999)
-    for i in range(10):  # 연봉 봉투 10개가 차례로 쌓임
-        x, y = -340 + (i % 5) * 170, -70 + (i // 5) * 180
-        on = i < n
-        rrect(ctx, x - 65, y - 50, 130, 100, 12)
-        S.fs(ctx, "#F3EBD5" if on else "#E3DCC8", lw=6 if on else 3, alpha=1 if on else 0.5)
-        if on:
-            draw_text(ctx, f"{i + 1}년", x, y, 40, font="black", fill=RED)
-    ctx.restore()
-    if lt >= sh.m(1):  # 30대 사례 카드
-        k2 = ease_out_back(prog(lt, sh.m(1), sh.m(1) + 0.4), 1.6)
-        card(ctx, 540, 1580, 900, 420, k2, fill="#FBF7EC", rot=0.02)
-        draw_text(ctx, "30대 직장인 사례", 0, -140, 50, font="black", fill="#7A8594")
-        draw_text(ctx, "대출 계획 4.3억", -190, -40, 50, font="black", fill="#2E3A4A")
-        draw_text(ctx, "→ 한도 축소", 230, -40, 50, font="black", fill=BLUE)
-        kk = ease_out_back(prog(lt, _frac(sh, 1, 0.6), _frac(sh, 1, 0.6) + 0.35), 2.0)
-        draw_text(ctx, "+1.3억 더 구해야", 0, 90, 76, font="black", fill=RED, scale=max(kk, 0.01))
+    if lt < sh.m(1):  # 연 소득 × 10: 연봉 봉투 10개가 차례로 채워짐
+        k = ease_out_back(prog(lt, 0.05, 0.4), 1.4)
+        card(ctx, 520, 640, 820, 640, k, rot=-0.02)
+        draw_text(ctx, "서울 아파트 = 연 소득 × 10", 0, -240, 56, font="black", fill="#2E3A4A")
+        n = int(10 * prog(lt, sh.at(0, "열"), sh.at(0, "십 년")) + 0.999)
+        for i in range(10):
+            x, y = -310 + (i % 5) * 155, -60 + (i // 5) * 180
+            on = i < n
+            rrect(ctx, x - 62, y - 50, 124, 100, 12)
+            S.fs(ctx, "#F3EBD5" if on else "#E3DCC8", lw=6 if on else 3, alpha=1 if on else 0.5)
+            if on:
+                draw_text(ctx, f"{i + 1}년", x, y, 40, font="black", fill=RED)
         ctx.restore()
-        YOUNG.draw(ctx, 150, 1180, 0.45, 1, pose="shrug", expr="shock", t=lt, sweat=True)
+        return
+    # 30대 사례 카드 (같은 자리로 교체 — 하단 UI 영역을 피함)
+    k2 = ease_out_back(prog(lt, sh.m(1), sh.m(1) + 0.4), 1.6)
+    card(ctx, 520, 640, 820, 640, k2, fill="#FBF7EC", rot=0.02)
+    draw_text(ctx, "30대 직장인 사례", 0, -230, 54, font="black", fill="#7A8594")
+    draw_text(ctx, "대출 계획 4.3억", 0, -110, 66, font="black", fill="#2E3A4A")
+    t_cut = sh.at(1, "한도")
+    kc = ease_out_back(prog(lt, t_cut, t_cut + 0.3), 2.0)
+    draw_text(ctx, "↓ 한도 축소", 0, 0, 62, font="black", fill=BLUE, scale=max(kc, 0.01))
+    t_add = sh.at(1, "일억")
+    kk = ease_out_back(prog(lt, t_add, t_add + 0.35), 2.0)
+    draw_text(ctx, "+1.3억 더 구해야", 0, 140, 84, font="black", fill=RED, scale=max(kk, 0.01))
+    ctx.restore()
 
 
 def shot_supply(ctx, lt, sh, ep):
@@ -268,7 +278,7 @@ def shot_supply(ctx, lt, sh, ep):
     ctx.fill()
     S.stamp(ctx, 540, 380, "대출 규제 = 해답?", prog(lt, 0.3, 0.7), size=80, rot=-0.06)
     for j in range(4):  # 아파트가 쑥쑥 올라감
-        t0 = _frac(sh, 0, 0.5 + j * 0.1)
+        t0 = sh.at(0, "공급") + j * 0.15
         h = 700 * ease_out_back(prog(lt, t0, t0 + 0.5), 1.4) * (0.75 + 0.1 * (j % 3))
         if h < 2:
             continue
@@ -279,20 +289,21 @@ def shot_supply(ctx, lt, sh, ep):
             for c in range(2):
                 rrect(ctx, x + 30 + c * 70, 1450 - h + 30 + r * 90, 48, 50, 6)
                 S.fs(ctx, "#7FA6C9", lw=4)
-    kb = ease_out_back(prog(lt, _frac(sh, 0, 0.55), _frac(sh, 0, 0.55) + 0.4), 2.0)
+    kb = ease_out_back(prog(lt, sh.at(0, "공급"), sh.at(0, "공급") + 0.4), 2.0)
     label(ctx, "결국 답은 공급?", 540, 620, kb, size=70)
 
 
 def shot_vote(ctx, lt, sh, ep):
-    k1 = ease_out_back(prog(lt, sh.m(1), sh.m(1) + 0.35), 1.6)
-    k2 = ease_out_back(prog(lt, _frac(sh, 1, 0.5), _frac(sh, 1, 0.5) + 0.35), 1.6)
+    t1, t2 = sh.at(1, "일 번"), sh.at(1, "이 번")
+    k1 = ease_out_back(prog(lt, t1, t1 + 0.35), 1.6)
+    k2 = ease_out_back(prog(lt, t2, t2 + 0.35), 1.6)
     ctx.rectangle(0, 0, W / 2, 1920)
     set_rgb(ctx, "#2F4A66")
     ctx.fill()
     ctx.rectangle(W / 2, 0, W / 2, 1920)
     set_rgb(ctx, "#5E6B45")
     ctx.fill()
-    for x, num, a, b, k in ((270, "1", "대출", "더 조이기", k1), (810, "2", "실수요자", "대출 풀기", k2)):
+    for x, num, a, b, k in ((260, "1", "대출", "더 조이기", k1), (790, "2", "실수요자", "대출 풀기", k2)):
         if k <= 0.01:
             continue
         ctx.save()
@@ -301,8 +312,8 @@ def shot_vote(ctx, lt, sh, ep):
         ellipse(ctx, 0, -220, 110, 110)
         S.fs(ctx, "#F3EBD5", lw=10)
         draw_text(ctx, num, 0, -216, 150, font="black", fill="#2E3A4A")
-        draw_text(ctx, a, 0, 0, 80, font="black", fill="#FFFFFF")
-        draw_text(ctx, b, 0, 100, 80, font="black", fill="#FFFFFF")
+        draw_text(ctx, a, 0, 0, 72, font="black", fill="#FFFFFF")
+        draw_text(ctx, b, 0, 100, 72, font="black", fill="#FFFFFF")
         ctx.restore()
     if lt < sh.m(1):
         draw_text(ctx, "너는 어느 쪽?", 540, 700, 110, font="black", fill="#FFFFFF", stroke=12,
@@ -314,7 +325,7 @@ def shot_vote(ctx, lt, sh, ep):
     # 루프: 끝에서 첫 장면의 "???" 가 미리 떠오른다
     kq = prog(lt, sh.dur - 0.5, sh.dur)
     if kq > 0:
-        draw_text(ctx, "???", 540, 1560, 220, font="black", fill="#E8B93E", stroke=16, stroke_fill="#1E1E22",
+        draw_text(ctx, "???", 540, 720, 130, font="black", fill="#E8B93E", stroke=14, stroke_fill="#1E1E22",
                   alpha=kq)
 
 
