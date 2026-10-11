@@ -263,3 +263,36 @@ def close_up(ctx, lt, sh, ep, P, spk, facing, x, base, dark, name, talk_line, ca
         set_rgb(ctx, "#F3EBD5")
         ctx.set_line_width(10)
         ctx.stroke()
+
+
+def bubble(ctx, text, x, y, k, size=56, fill="#FFFFFF", ink="#2E3A4A", tail=1):
+    """말풍선 (k: 팝업 배율)."""
+    if k <= 0.01:
+        return
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(k, k)
+    tw = len(text) * size * 0.95 + 70
+    ctx.new_path()
+    ctx.move_to(tail * 20, 40)
+    ctx.line_to(tail * 60, 95)
+    ctx.line_to(tail * 70, 40)
+    ctx.close_path()
+    S.fs(ctx, fill, lw=6)
+    rrect(ctx, -tw / 2, -55, tw, 110, 40)
+    S.fs(ctx, fill, lw=6)
+    rrect(ctx, tail * 20 - 4, 30, 54, 16, 4)
+    set_rgb(ctx, fill)
+    ctx.fill()
+    draw_text(ctx, text, 0, 2, size, font="black", fill=ink)
+    ctx.restore()
+
+
+def card(ctx, x, y, w, h, k, fill="#FBF7EC", rot=0.0):
+    """팝업 카드 배경. 이후 그릴 내용을 위해 변환을 걸어 둔 채 ctx.save() 상태로 돌려준다."""
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.rotate(rot)
+    ctx.scale(max(k, 0.01), max(k, 0.01))
+    rrect(ctx, -w / 2, -h / 2, w, h, 30)
+    S.fs(ctx, fill, lw=9)
