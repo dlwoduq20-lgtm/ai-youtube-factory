@@ -174,7 +174,7 @@ class Explainer:
             self.prepare()
         i = max(j for j, sh in enumerate(self.shots) if sh.start <= t or j == 0)
         lt = t - self.shots[i].start
-        if i > 0 and lt < TRANS:
+        if i > 0 and lt < TRANS and not self.shots[i].opts.get("cut"):  # cut=True 면 전환 없이 바로
             e = ease_in_out(lt / TRANS)
             if i % 2 == 0:  # 휙 넘기기
                 ctx.save()
@@ -207,8 +207,8 @@ class Explainer:
         if self.notice:
             draw_text(ctx, self.notice, W / 2, 70, 30, font="black", fill="#FFFFFF", alpha=0.75,
                       stroke=6, stroke_fill="#1E1E22")
-        if self.chapters:
-            self._progress(ctx, t)
+        if self.chapters:  # 루프용 마지막 컷(cut=True)은 첫 프레임과 같도록 진행 바를 비운다
+            self._progress(ctx, 0.0 if self.shots[i].opts.get("cut") else t)
         self._caption(ctx, t)
         if os.environ.get("SAFE_GUIDE"):  # 스틸컷 점검용: 가려지는 영역 표시
             ctx.rectangle(0, SAFE_BOTTOM, W, H - SAFE_BOTTOM)
