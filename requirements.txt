@@ -3,3 +3,4 @@ Pillow>=10
 numpy>=1.26
 edge-tts>=7.0
 espeakng-loader>=0.2
+fonttools>=4.40

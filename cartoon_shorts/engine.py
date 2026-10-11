@@ -95,8 +95,53 @@ _text_cache = {}
 def _font(name, size):
     key = (name, size)
     if key not in _font_cache:
-        _font_cache[key] = ImageFont.truetype(FONTS[name], size)
+        _font_cache[key] = ImageFont.truetype(FONTS.get(name, name), size)
     return _font_cache[key]
+
+
+# 한글 폰트에 없는 기호(· ↑ ↓ → … ① 등)는 이 폰트로 대신 그린다
+FALLBACK_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+_cmap_cache = {}
+
+
+def _cmap(path):
+    if path not in _cmap_cache:
+        from fontTools.ttLib import TTFont
+        _cmap_cache[path] = set(TTFont(path).getBestCmap())
+    return _cmap_cache[path]
+
+
+def _missing(text, font):
+    if not os.path.exists(FALLBACK_FONT):
+        return False
+    cmap = _cmap(FONTS[font])
+    return any(ord(ch) not in cmap for ch in text if ch not in " \n")
+
+
+def _line_image(line, size, font, fill, stroke, stroke_fill):
+    """한 줄을 글자 단위로 주 폰트/대체 폰트 구간으로 나눠 기준선에 맞춰 이어 그린다."""
+    cmap = _cmap(FONTS[font])
+    runs = []
+    for ch in line:
+        fb = ch != " " and ord(ch) not in cmap
+        if runs and runs[-1][1] == fb:
+            runs[-1][0] += ch
+        else:
+            runs.append([ch, fb])
+    fonts = {False: _font(font, size), True: _font(FALLBACK_FONT, size)}
+    asc = max(fonts[fb].getmetrics()[0] for _, fb in runs) if runs else size
+    desc = max(fonts[fb].getmetrics()[1] for _, fb in runs) if runs else 0
+    widths = [fonts[fb].getlength(txt) for txt, fb in runs]
+    pad = 4 + stroke
+    w, h = math.ceil(sum(widths)) + pad * 2, asc + desc + pad * 2
+    img = Image.new("RGBA", (max(w, 1), max(h, 1)), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    x = pad
+    for (txt, fb), wd in zip(runs, widths):
+        d.text((x, pad + asc), txt, font=fonts[fb], fill=fill, anchor="ls",
+               stroke_width=stroke, stroke_fill=stroke_fill)
+        x += wd
+    return img
 
 
 def pil_to_surface(img):
@@ -118,6 +163,19 @@ def text_surface(text, size, font="jua", fill="#111111", stroke=0,
                  stroke_fill="#111111", spacing=10, align="center"):
     key = (text, size, font, fill, stroke, stroke_fill, spacing, align)
     if key in _text_cache:
+        return _text_cache[key]
+    if _missing(text, font):
+        lines = [_line_image(ln, size, font, fill, stroke, stroke_fill) for ln in text.split("\n")]
+        w = max(im.width for im in lines)
+        h = sum(im.height for im in lines) + spacing * (len(lines) - 1)
+        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        y = 0
+        for im in lines:
+            x = (w - im.width) // 2 if align == "center" else 0
+            img.alpha_composite(im, (x, y))
+            y += im.height + spacing
+        surf = pil_to_surface(img)
+        _text_cache[key] = (surf, w, h)
         return _text_cache[key]
     f = _font(font, size)
     tmp = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
