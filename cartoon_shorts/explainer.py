@@ -53,7 +53,7 @@ class Shot:
 
 class Explainer:
     def __init__(self, script, voice, cap_color, shot_fns, camera, cues_fn, notice="",
-                 bpm=118, chapters=None):
+                 bpm=118, chapters=None, overlay_delay=0.0):
         """script: [(샷 이름, [(화자, TTS 문장, 자막 or None)], 옵션)]
         voice: 화자 → (edge 음성, 속도, 피치, 추가 피치 배율). 동시 발화는 화자 문자를 이어 쓴다 ("AB").
         shot_fns: 샷 이름 → fn(ctx, lt, sh, ep).  cues_fn(ep) → [(t, kind[, dur])].
@@ -61,6 +61,7 @@ class Explainer:
         self.script, self.voice, self.cap_color = script, voice, cap_color
         self.shot_fns, self.camera, self.cues_fn = shot_fns, camera, cues_fn
         self.notice, self.bpm, self.chapters = notice, bpm, chapters or []
+        self.overlay_delay = overlay_delay  # 고지 문구·진행 바를 이 시간(초) 뒤부터 보여준다 (첫 화면은 얼굴+훅만)
         self.shots, self.lines, self.env, self.cues = [], [], {}, []
         self.duration, self.voice_track = 0.0, None
 
@@ -204,11 +205,18 @@ class Explainer:
             self._draw_shot(ctx, i, t)
         S.vignette(ctx, 0.35)
         S.grain(ctx, t, 0.05)
-        if self.notice:
-            draw_text(ctx, self.notice, W / 2, 70, 30, font="black", fill="#FFFFFF", alpha=0.75,
+        cut = self.shots[i].opts.get("cut")
+        ov = 0.0 if (self.overlay_delay and cut) else prog(t, self.overlay_delay, self.overlay_delay + 0.4)
+        if not self.overlay_delay:
+            ov = 1.0
+        if self.notice and ov > 0:
+            draw_text(ctx, self.notice, W / 2, 70, 30, font="black", fill="#FFFFFF", alpha=0.75 * ov,
                       stroke=6, stroke_fill="#1E1E22")
-        if self.chapters:  # 루프용 마지막 컷(cut=True)은 첫 프레임과 같도록 진행 바를 비운다
-            self._progress(ctx, 0.0 if self.shots[i].opts.get("cut") else t)
+        if self.chapters and ov > 0:  # 루프용 마지막 컷(cut=True)은 첫 프레임과 같도록 진행 바를 비운다
+            ctx.push_group()
+            self._progress(ctx, 0.0 if cut else t)
+            ctx.pop_group_to_source()
+            ctx.paint_with_alpha(ov)
         self._caption(ctx, t)
         if os.environ.get("SAFE_GUIDE"):  # 스틸컷 점검용: 가려지는 영역 표시
             ctx.rectangle(0, SAFE_BOTTOM, W, H - SAFE_BOTTOM)
