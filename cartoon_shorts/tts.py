@@ -7,7 +7,11 @@
   3. espeak-ng : 오프라인 대체 (기계음) — espeakng-loader 패키지에 라이브러리/데이터 포함
 
 결과는 .cache/tts/ 에 캐시되며 (SR=44100 mono float32 배열, 길이초) 를 돌려준다.
-환경변수 TTS_BACKEND=edge|google|espeak 로 강제할 수 있다.
+환경변수 TTS_BACKEND=edge|azure|google|espeak 로 강제할 수 있다.
+
+azure: Edge 와 같은 마이크로소프트 신경망 음성(InJoon·SunHi·Hyunsu)을 공식 Azure Speech 로 합성.
+  AZURE_SPEECH_KEY, AZURE_SPEECH_REGION(예: koreacentral) 환경변수가 있어야 하며, 무료 등급(F0)은 월 50만 자.
+  2026-10-12 무렵부터 Edge 무료 엔드포인트가 403 을 내서 대체 경로로 추가했다.
 """
 import asyncio
 import ctypes
@@ -59,6 +63,23 @@ GOOGLE_STYLE = {
     "ko-KR-HyunsuMultilingualNeural": (0.82, 1.22),  # 남자 캐릭터: 낮게
     "ko-KR-SunHiNeural": (1.08, 1.22),            # 여자 캐릭터: 살짝 높게
 }
+
+
+def _azure(text, voice, rate, pitch, out):
+    """공식 Azure Speech REST API (SSML 의 prosody 로 edge 와 같은 rate/pitch 를 그대로 적용)."""
+    import urllib.request
+    from xml.sax.saxutils import escape
+    key, region = os.environ.get("AZURE_SPEECH_KEY"), os.environ.get("AZURE_SPEECH_REGION")
+    if not key or not region:
+        raise RuntimeError("AZURE_SPEECH_KEY / AZURE_SPEECH_REGION 이 설정되지 않음")
+    ssml = (f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="ko-KR">'
+            f'<voice name="{voice}"><prosody rate="{rate}" pitch="{pitch}">{escape(text)}</prosody></voice></speak>')
+    req = urllib.request.Request(
+        f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1", data=ssml.encode("utf-8"),
+        headers={"Ocp-Apim-Subscription-Key": key, "Content-Type": "application/ssml+xml",
+                 "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3", "User-Agent": "ai-youtube-factory"})
+    with urllib.request.urlopen(req, timeout=30) as r, open(out, "wb") as f:
+        f.write(r.read())
 
 
 def _google(text, voice, rate, pitch, out):
@@ -125,14 +146,14 @@ def synth(text, voice="female", rate="+10%", pitch="+0Hz", shift=1.0):
     voice = VOICES.get(voice, voice)
     backend = os.environ.get("TTS_BACKEND")
     os.makedirs(CACHE, exist_ok=True)
-    order = [backend] if backend else ["edge", "google", "espeak"]
+    order = [backend] if backend else ["edge", "azure", "google", "espeak"]
     last = None
     for b in order:
         key = hashlib.sha1(f"{b}|{voice}|{rate}|{pitch}|{text}".encode()).hexdigest()[:16]
-        out = os.path.join(CACHE, f"{key}.{'mp3' if b == 'edge' else 'wav'}")
+        out = os.path.join(CACHE, f"{key}.{'mp3' if b in ('edge', 'azure') else 'wav'}")
         if not (os.path.exists(out) and os.path.getsize(out) > 0):
             try:
-                {"edge": _edge, "google": _google, "espeak": _espeak}[b](text, voice, rate, pitch, out)
+                {"edge": _edge, "azure": _azure, "google": _google, "espeak": _espeak}[b](text, voice, rate, pitch, out)
             except Exception as e:  # noqa: BLE001 — 다음 백엔드로 폴백
                 last = e
                 if os.path.exists(out):
