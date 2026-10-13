@@ -168,8 +168,8 @@ def _hook_frame(ctx, lt, sh, ep, frozen=False):
     m = ep.mouth("K", sh.start + lt) * 1.3 if (ep and yell) else 0
     KOREA.draw(ctx, 540 + tug * 0.5, 2280, 2.4, 1, pose="flail" if yell else "shrug",
                expr="angry" if yell else "shock", mouth=m, t=t, bob=False, sweat=True)
-    name_tag(ctx, "중국이", 170, 590, fill="#FFB3A8")
-    name_tag(ctx, "일본이", 860, 470, fill="#FFF0B3")
+    name_tag(ctx, "중국인", 170, 590, fill="#FFB3A8")
+    name_tag(ctx, "일본인", 860, 470, fill="#FFF0B3")
     for j, ln in enumerate(HOOK):  # 첫 프레임부터 떠 있는 훅 문장
         draw_text(ctx, ln, 540, 250 + j * 120, 92 if j == 0 else 100, font="black",
                   fill="#FFFFFF" if j == 0 else "#FFE38A", stroke=14, stroke_fill="#2E2A28")
@@ -186,11 +186,11 @@ def shot_loop(ctx, lt, sh, ep):
 def shot_invite(ctx, lt, sh, ep):
     classroom(ctx)
     j_on = lt >= sh.m(1)
-    kid(ctx, KOREA, "K", 540, 1420, 0.85, 1, lt, sh, None, pose="shrug", expr="shock", tag="한국이", tag_fill="#BFE0F5")
+    kid(ctx, KOREA, "K", 540, 1420, 0.85, 1, lt, sh, None, pose="shrug", expr="shock", tag="한국인", tag_fill="#BFE0F5")
     kid(ctx, CHINA, "C", 220, 1500, 1.05, 1, lt, sh, ep, pose="wave" if not j_on else "hips",
-        expr="smug" if not j_on else "angry", tag="중국이", tag_fill="#FFB3A8")
+        expr="smug" if not j_on else "angry", tag="중국인", tag_fill="#FFB3A8")
     kid(ctx, JAPAN, "J", 820, 1500, 1.05, -1, lt, sh, ep, pose="wave" if j_on else "down",
-        expr="smug" if j_on else "neutral", tag="일본이", tag_fill="#FFF0B3")
+        expr="smug" if j_on else "neutral", tag="일본인", tag_fill="#FFF0B3")
     bubble(ctx, "밥 살게!", 300, 420, ease_out_back(prog(lt, sh.m(0), sh.m(0) + 0.3), 1.6), size=64, tail=1)
     bubble(ctx, "우리 집 먼저!", 720, 420, ease_out_back(prog(lt, sh.m(1), sh.m(1) + 0.3), 1.6), size=60, tail=-1)
 
@@ -237,9 +237,9 @@ def shot_remark(ctx, lt, sh, ep):
 def shot_clash(ctx, lt, sh, ep):
     S.planks(ctx, base="#3A3F52", dark="#30354A", seed=5)
     j_on = lt >= sh.m(1)
-    kid(ctx, CHINA, "C", 270, 1500, 1.2, 1, lt, sh, ep, pose="point", expr="angry", tag="중국이", tag_fill="#FFB3A8")
+    kid(ctx, CHINA, "C", 270, 1500, 1.2, 1, lt, sh, ep, pose="point", expr="angry", tag="중국인", tag_fill="#FFB3A8")
     kid(ctx, JAPAN, "J", 790, 1500, 1.2, -1, lt, sh, ep, pose="hips" if not j_on else "point",
-        expr="smug" if not j_on else "angry", tag="일본이", tag_fill="#FFF0B3")
+        expr="smug" if not j_on else "angry", tag="일본인", tag_fill="#FFF0B3")
     bolt(ctx, 540, 820, 1.4, lt)
     bubble(ctx, "취소해!", 300, 330, ease_out_back(prog(lt, sh.m(0), sh.m(0) + 0.3), 1.6), size=70, tail=1)
     bubble(ctx, "못 해!", 780, 330, ease_out_back(prog(lt, sh.m(1), sh.m(1) + 0.3), 1.6), size=70, tail=-1)
@@ -270,7 +270,7 @@ def shot_tourists(ctx, lt, sh, ep):
         x = -150 + j * 120 + 450 * k
         suitcase(ctx, x, 1150 - (j % 2) * 30, 1.0, ("#C8382E", "#E8B93E", "#5BA37A")[j % 3])
     kid(ctx, KOREA, "K", 800, 1180, 0.9, -1, lt, sh, None, pose="cheer" if lt >= tk else "down",
-        expr="smug" if lt >= tk else "neutral", tag="한국이", tag_fill="#BFE0F5")
+        expr="smug" if lt >= tk else "neutral", tag="한국인", tag_fill="#BFE0F5")
     t57 = sh.at(0, "오십칠만")
     k57 = ease_out_back(prog(lt, t57 - 0.1, t57 + 0.3), 1.8)
     if k57 > 0.01:
