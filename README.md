@@ -3,6 +3,22 @@
 정치·외교·젠더 등 사회 이슈를 **만화풍 만평 + 모션그래픽** 세로 쇼츠(1080x1920, 30fps)로 만드는 코드 기반 생성기입니다.
 외부 이미지/음원 없이 도형·텍스트·효과음을 전부 코드로 그려서 저작권 걱정이 없습니다.
 
+## 샘플 4 (영어권 파일럿, 내레이션 코미디): `samples/ep04_texted_back.mp4` (약 43초)
+
+**Two Different Universes #01 — Why Hasn't He Texted Back?**
+
+영어권 관계 코미디 채널 파일럿. 캐릭터 대사 없이 **무표정한 영국식 다큐 내레이터 한 명**(Edge TTS `en-GB-RyanNeural`)이
+상황을 중계하고, 웃음은 표정·소품·반전 타이밍으로 만든다 (TTS 감정 연기 문제를 피하는 구조).
+
+- 구조: REALITY(문자 전송) → HER VERSION(확인 23번, 증거판 추리, "LOSING INTEREST") → HIS VERSION(게임 승리)
+  → THE TRUTH(폰 방전 8:26 PM, 문자 도착 전) → 충전 후 "hey :)" / "nvm." → "Same moment. Two worlds." 댓글 유도
+- 화면 구도: 위 = 상황(폰·증거판·TV), 가운데 = 영어 자막(단어 동기), 아래 = 캐릭터 상반신
+- 엔진 추가: `Episode(cap_chars=14)` 영어 자막 덩어리 길이, `Person.draw(prop=...)` 손에 든 소품, `hold`/`game` 포즈
+
+```bash
+python render.py ep04_texted_back
+```
+
 ## 샘플 3 (정보형 해설 + 실제 통계): `samples/ep03_birthrate.mp4` (약 97초)
 
 **오늘의 만평 #03 — 280조 원을 쓰고도 아이가 줄어든 이유**

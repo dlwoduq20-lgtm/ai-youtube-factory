@@ -180,6 +180,13 @@ class Person:
             w = math.sin(t * 10) * 45
             return ([(-85, -330), (-120, -250), (-110, -170)],
                     [(85, -330), (175, -400), (190 + w, -540)])
+        if pose == "hold":  # 두 손으로 휴대폰을 가슴 앞에 듦
+            return ([(-85, -330), (-120, -230), (-30, -290)],
+                    [(85, -330), (125, -230), (40, -290)])
+        if pose == "game":  # 게임 패드를 앞으로 잡고 엄지를 까딱임
+            j = math.sin(t * 14) * 6
+            return ([(-85, -330), (-135, -220), (-35, -215 + j)],
+                    [(85, -330), (140, -220), (45, -215 - j)])
         if pose == "flail":
             a = math.sin(t * 16) * 50
             return ([(-85, -330), (-170, -380 + a), (-230, -470 - a)],
@@ -188,7 +195,8 @@ class Person:
                 [(85, -330), (115, -250), (110, -165)])
 
     def draw(self, ctx, x, y, s=1.0, facing=1, pose="down", expr="neutral", mouth=0.0,
-             t=0.0, rot=0.0, bob=True, sweat=False):
+             t=0.0, rot=0.0, bob=True, sweat=False, prop=None):
+        """prop: 손에 든 소품을 그리는 함수 prop(ctx, t). 캐릭터 좌표계에서 앞팔 바로 전에 그려진다."""
         ctx.save()
         ctx.translate(x, y)
         ctx.rotate(rot)
@@ -270,6 +278,8 @@ class Person:
             fs(ctx, "#E8B93E", lw=4)
         # 머리
         self._head(ctx, expr, mouth, t, sweat)
+        if prop:
+            prop(ctx, t)
         # 앞팔
         tube(ctx, front, 48, self.coat)
         ellipse(ctx, *front[-1], 32, 32)

@@ -51,8 +51,9 @@ def _plain(text):
 
 class Episode:
     def __init__(self, title, script, shot_fns, voices, cap_colors=None, camera=None,
-                 bgm_style="explain", bpm=92, bgm_gain=0.26):
+                 bgm_style="explain", bpm=92, bgm_gain=0.26, cap_chars=9):
         self.title, self.script, self.shot_fns = title, script, shot_fns
+        self.cap_chars = cap_chars  # 자막 한 덩어리 최대 글자 수 (한국어 9, 영어는 14 정도)
         self.voices = voices
         self.cap_colors = cap_colors or {}
         self.camera = camera or {}
@@ -83,7 +84,7 @@ class Episode:
                 sh.marks.append((lt, lt + d))
                 sh.words.append([(lt + a, lt + b, t) for a, b, t in words] if words else None)
                 self.lines.append(dict(start=cur + lt, end=cur + lt + d, spk=spk, text=text,
-                                       chunks=self._chunks(text, cur + lt, d, words)))
+                                       chunks=self._chunks(text, cur + lt, d, words, self.cap_chars)))
                 lt += d + GAP
             sh.dur = lt - GAP + opts.get("tail", 0.45)
             cur += sh.dur
@@ -105,7 +106,7 @@ class Episode:
             self.env[k] = np.clip(rms / peak, 0, 1)
 
     @staticmethod
-    def _chunks(text, start, dur, words):
+    def _chunks(text, start, dur, words, max_chars=9):
         """자막 덩어리 [(시작, 끝, [(단어, 강조여부)])]. edge 단어 타이밍이 있으면 그대로 사용."""
         toks = []
         hl = False
@@ -129,7 +130,7 @@ class Episode:
                 acc += ln
         chunks, cur, cur_len = [], [], 0
         for (w, h), (a, b) in zip(toks, times):
-            if cur and (cur_len + len(w) > 9 or cur[-1][0].endswith((",", ".", "?", "!"))):
+            if cur and (cur_len + len(w) > max_chars or cur[-1][0].endswith((",", ".", "?", "!"))):
                 chunks.append(cur)
                 cur, cur_len = [], 0
             cur.append((w, h, a, b))
